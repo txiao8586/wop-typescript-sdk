@@ -89,23 +89,33 @@
     "@cucumber/cucumber": "^13.2.1",
     "@microsoft/api-extractor": "^7.59.0",
     "@types/node": "^24.13.3",
-    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/coverage-v8": "^4.1.11",
     "axios": "^1.13.2",
     "publint": "^0.3.24",
     "tsup": "^8.5.0",
     "tsx": "^4.23.12",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.11"
   },
   "overrides": {
     "esbuild": "^0.28.1"
   },
   "pnpm": {
     "overrides": {
-      "esbuild": "^0.28.1"
+      "esbuild": "^0.28.1",
+      "tinypool": ">=2.1.2",
+      "fast-uri": ">=3.1.8",
+      "source-map-js": ">=1.2.2",
+      "brace-expansion@>=2.0.0 <2.1.7": ">=2.1.7",
+      "brace-expansion@>=4.0.0 <5.0.12": ">=5.0.12"
     },
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-hp3w-g68c-fv3c"
+      ]
+    }
   }
 }
