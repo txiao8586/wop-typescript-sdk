@@ -61,7 +61,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - name: 主仓源码 tsc --noEmit @ typescript@latest（devDeps 升级前预警）
-        run: npx -y -p typescript@latest tsc --noEmit
+        run: node tests/fetch-pinned.mjs && npx -y -p typescript@latest tsc --noEmit
 
   axios-matrix:
     name: axios ${{ matrix.axios }}

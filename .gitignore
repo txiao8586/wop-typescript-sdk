@@ -19,3 +19,7 @@ __pycache__
 .factory/regression/**/out/
 .factory/feedback-log.jsonl
 .factory/upstream-lock.json
+
+# 黄金向量按钉版拉取生成（fetch-pinned.mjs），不落库
+tests/fixtures/crypto-vectors.json
+tests/fixtures/interop-cases.json
