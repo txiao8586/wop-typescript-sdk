@@ -44,7 +44,7 @@ import { WopClient } from '@wanlianyida/wop-typescript-sdk'; // 或 require('@wa
 
 const client = new WopClient({
   appKey: 'your-app-key',
-  suite: 'WOP-RSA3072-SHA256',        // securityReq
+  suite: 'WOP-RSA2048-SHA256',        // securityReq
   merchantPrivateKey: '...',           // 商户私钥（PKCS#8）
   platformPublicKey: '...',            // 平台公钥（X.509 SPKI）
   gatewayBaseUrl: 'https://gw.example.com',
