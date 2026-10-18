@@ -96,6 +96,10 @@ client.setTransport(new AxiosTransport());
 - **错误类目 `system` → `configuration` 及文案变更**：path 校验类错误（空 path、非 `/` 前缀、`//` 前缀、绝对 URL、含控制字符 CR/LF/NUL/DEL 等 <0x20/0x7F——错误信息只回显码点、不回显原值）由 system 调整为 configuration，文案同步变更。按 `category === 'system'` 做可重试判定的调用方需更新分支。
 - **新增恒定请求头 `x-wop-request-id`**（恒存在、恒不入签，wop-specs 附录 I）：使用 CORS 精确 allowlist 的浏览器侧部署须在 `Access-Control-Allow-Headers` 中追加该头，否则预检（OPTIONS）失败、请求无法发出。
 
+## 预留字段
+
+- **`httpClient.maxRetryCount` / `backupServerRoots` 为预留字段，当前版本不生效**（P2）：传输层仅消费 `readTimeout` 超时（且为 fetch 总时长近似，见 transport 实现注释）；配置重试上限或备用网关根不会产生任何重试或切换行为。
+
 ## 向量自测（conformance）
 
 本仓 `tests/fixtures/crypto-vectors.json` 为协议黄金向量全量副本（只读，禁止手改）。
