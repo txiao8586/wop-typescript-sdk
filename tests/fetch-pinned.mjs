@@ -31,6 +31,7 @@ export default async function fetchPinnedSpecs() {
   }
 }
 
-if (process.argv[1] && [import.meta.url, fileURLToPath(import.meta.url)].includes(`file://${process.argv[1]}`)) {
+// CLI 直跑判定：windows 下 argv[1] 是本地路径，与 fileURLToPath 结果同构比较
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await fetchPinnedSpecs();
 }
