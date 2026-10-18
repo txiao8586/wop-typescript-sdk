@@ -1,51 +1,51 @@
 {
-  "total": 262,
-  "killed": 247,
-  "score": 0.9427480916030534,
+  "total": 425,
+  "killed": 388,
+  "score": 0.9129411764705883,
   "byOp": {
     "arith-plus": {
-      "total": 9,
-      "killed": 9
+      "total": 12,
+      "killed": 12
     },
     "numeric": {
-      "total": 37,
-      "killed": 36
+      "total": 55,
+      "killed": 47
     },
     "stmt-del": {
-      "total": 63,
-      "killed": 60
+      "total": 99,
+      "killed": 95
     },
     "cond-lt": {
+      "total": 22,
+      "killed": 11
+    },
+    "cond-gt": {
       "total": 8,
       "killed": 4
     },
-    "cond-gt": {
-      "total": 4,
-      "killed": 2
-    },
     "logic-and": {
-      "total": 6,
-      "killed": 6
+      "total": 17,
+      "killed": 17
     },
     "eq": {
-      "total": 27,
-      "killed": 27
+      "total": 38,
+      "killed": 38
     },
     "neq": {
-      "total": 23,
-      "killed": 23
+      "total": 33,
+      "killed": 32
     },
     "bool": {
-      "total": 4,
-      "killed": 3
+      "total": 10,
+      "killed": 9
     },
     "not-drop": {
-      "total": 16,
-      "killed": 16
+      "total": 32,
+      "killed": 32
     },
     "string": {
-      "total": 61,
-      "killed": 57
+      "total": 95,
+      "killed": 87
     },
     "shift": {
       "total": 4,
@@ -54,41 +54,261 @@
   },
   "survivors": [
     {
-      "id": "client.ts:353",
+      "id": "client.ts:120",
       "op": "cond-lt",
       "file": "src/client.ts",
-      "start": 12304,
-      "end": 12305,
+      "start": 3786,
+      "end": 3787,
       "replacement": "<=",
       "killed": false,
       "detail": "exit=0"
     },
     {
-      "id": "client.ts:328",
+      "id": "client.ts:533",
+      "op": "cond-lt",
+      "file": "src/client.ts",
+      "start": 18203,
+      "end": 18204,
+      "replacement": "<=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "client.ts:121",
+      "op": "cond-gt",
+      "file": "src/client.ts",
+      "start": 3844,
+      "end": 3845,
+      "replacement": ">=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "client.ts:508",
       "op": "bool",
       "file": "src/client.ts",
-      "start": 11389,
-      "end": 11393,
+      "start": 17288,
+      "end": 17292,
       "replacement": "false",
       "killed": false,
       "detail": "exit=0"
     },
     {
-      "id": "client.ts:268",
+      "id": "client.ts:136",
+      "op": "numeric",
+      "file": "src/client.ts",
+      "start": 4325,
+      "end": 4329,
+      "replacement": "65",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "client.ts:137",
+      "op": "numeric",
+      "file": "src/client.ts",
+      "start": 4363,
+      "end": 4367,
+      "replacement": "129",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "client.ts:498",
       "op": "string",
       "file": "src/client.ts",
-      "start": 9011,
-      "end": 9012,
+      "start": 17002,
+      "end": 17003,
       "replacement": "@mut'",
       "killed": false,
       "detail": "exit=0"
     },
     {
-      "id": "client.ts:374",
+      "id": "client.ts:534",
       "op": "string",
       "file": "src/client.ts",
-      "start": 13177,
-      "end": 13178,
+      "start": 18279,
+      "end": 18280,
+      "replacement": "@mut'",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configJsonParser.ts:158",
+      "op": "cond-lt",
+      "file": "src/config/configJsonParser.ts",
+      "start": 4823,
+      "end": 4824,
+      "replacement": "<=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configJsonParser.ts:229",
+      "op": "cond-lt",
+      "file": "src/config/configJsonParser.ts",
+      "start": 6604,
+      "end": 6605,
+      "replacement": "<=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configJsonParser.ts:295",
+      "op": "cond-lt",
+      "file": "src/config/configJsonParser.ts",
+      "start": 8318,
+      "end": 8319,
+      "replacement": "<=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configJsonParser.ts:310",
+      "op": "cond-lt",
+      "file": "src/config/configJsonParser.ts",
+      "start": 8698,
+      "end": 8699,
+      "replacement": "<=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configJsonParser.ts:326",
+      "op": "cond-lt",
+      "file": "src/config/configJsonParser.ts",
+      "start": 9146,
+      "end": 9147,
+      "replacement": "<=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configJsonParser.ts:331",
+      "op": "cond-lt",
+      "file": "src/config/configJsonParser.ts",
+      "start": 9309,
+      "end": 9310,
+      "replacement": "<=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configJsonParser.ts:203",
+      "op": "cond-gt",
+      "file": "src/config/configJsonParser.ts",
+      "start": 5841,
+      "end": 5842,
+      "replacement": ">=",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configJsonParser.ts:203",
+      "op": "numeric",
+      "file": "src/config/configJsonParser.ts",
+      "start": 5839,
+      "end": 5840,
+      "replacement": "5",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configValidator.ts:68",
+      "op": "numeric",
+      "file": "src/config/configValidator.ts",
+      "start": 2592,
+      "end": 2596,
+      "replacement": "1801",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configValidator.ts:70",
+      "op": "numeric",
+      "file": "src/config/configValidator.ts",
+      "start": 2658,
+      "end": 2664,
+      "replacement": "10001",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configValidator.ts:71",
+      "op": "numeric",
+      "file": "src/config/configValidator.ts",
+      "start": 2685,
+      "end": 2691,
+      "replacement": "30001",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configValidator.ts:72",
+      "op": "numeric",
+      "file": "src/config/configValidator.ts",
+      "start": 2714,
+      "end": 2715,
+      "replacement": "4",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "configValidator.ts:36",
+      "op": "stmt-del",
+      "file": "src/config/configValidator.ts",
+      "start": 1195,
+      "end": 1206,
+      "replacement": "",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "loader.ts:113",
+      "op": "neq",
+      "file": "src/config/loader.ts",
+      "start": 3193,
+      "end": 3196,
+      "replacement": "===",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "loader.ts:102",
+      "op": "string",
+      "file": "src/config/loader.ts",
+      "start": 2922,
+      "end": 2923,
+      "replacement": "@mut'",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "loader.ts:113",
+      "op": "string",
+      "file": "src/config/loader.ts",
+      "start": 3207,
+      "end": 3208,
+      "replacement": "@mut'",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "loader.ts:140",
+      "op": "string",
+      "file": "src/config/loader.ts",
+      "start": 3956,
+      "end": 3957,
+      "replacement": "@mut'",
+      "killed": false,
+      "detail": "exit=0"
+    },
+    {
+      "id": "loader.ts:144",
+      "op": "string",
+      "file": "src/config/loader.ts",
+      "start": 4274,
+      "end": 4275,
       "replacement": "@mut'",
       "killed": false,
       "detail": "exit=0"
