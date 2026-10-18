@@ -26,7 +26,7 @@ const MERCH_PRIV = vectors.keys.rsa3072!.privatePkcs8B64;
 const PLAT_PUB = vectors.keys.rsa3072!.publicSpkiB64;
 const PLAT_PRIV = vectors.keys.rsa3072!.privatePkcs8B64;
 
-function validConfigJson(overrides: Record<string, unknown> = {}): string {
+export function validConfigJson(overrides: Record<string, unknown> = {}): string {
   const base = {
     appKey: 'app_001',
     suite: 'WOP-RSA3072-SHA256',

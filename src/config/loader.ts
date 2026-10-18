@@ -24,7 +24,7 @@ export function load(location: string): WopSdkConfig {
     throw new WopError('配置文件路径不能为空', 'configuration');
   }
   const normalized = path.resolve(location);
-  return loadCached(`file:${normalized}`, () => readFileUtf8(normalized, false));
+  return loadCached(`file:${normalized}`, () => readFileUtf8(normalized, true));
 }
 
 /** 清除加载缓存（测试 / 配置轮换编排） */

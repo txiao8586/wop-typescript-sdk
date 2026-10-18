@@ -18,9 +18,6 @@ export function validateGatewayUrl(value: string | null | undefined, fieldName: 
   if (url.search !== '' || url.hash !== '') {
     throw new WopError(`${fieldName} 不得含 query 或 fragment: ${trimmed}`, 'configuration');
   }
-  if (!url.hostname) {
-    throw new WopError(`${fieldName} 不是合法 URL: ${trimmed}`, 'configuration');
-  }
   let normalized = `https://${url.hostname.toLowerCase()}`;
   if (url.port) {
     normalized += `:${url.port}`;
@@ -50,6 +47,10 @@ export function validateApiPath(path: string): void {
       );
     }
   }
+  // 绝对 URL 检查须先于 / 前缀检查，否则对 "https://..." 永远只报前缀错
+  if (/^https?:/i.test(path)) {
+    throw new WopError(`path 不得为绝对 URL: ${path}`, 'configuration');
+  }
   if (!path.startsWith('/')) {
     throw new WopError(`path 须以 / 开头: ${path}`, 'configuration');
   }
@@ -59,15 +60,12 @@ export function validateApiPath(path: string): void {
   if (path.includes('?') || path.includes('#')) {
     throw new WopError(`path 不得含 query 或 fragment: ${path}`, 'configuration');
   }
-  if (/^https?:/i.test(path)) {
-    throw new WopError(`path 不得为绝对 URL: ${path}`, 'configuration');
-  }
 }
 
 /** §7.7 字符串拼接 serverRoot + path */
 export function joinUrl(serverRoot: string, path: string): string {
   validateApiPath(path);
+  // validateApiPath 已保证 path 以 / 开头，无需再补前缀
   const root = serverRoot.endsWith('/') ? serverRoot.slice(0, -1) : serverRoot;
-  const trimmedPath = path.startsWith('/') ? path : `/${path}`;
-  return root + trimmedPath;
+  return root + path;
 }

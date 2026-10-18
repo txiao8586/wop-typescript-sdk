@@ -113,7 +113,8 @@ class ConfigJsonParser {
             read = this.readInt('readTimeout');
             break;
           case 'maxRetryCount':
-            maxRetry = this.readInt('maxRetryCount');
+            // validator 语义为非负:0(禁用重试)合法,其余字段仍须 >0
+            maxRetry = this.readInt('maxRetryCount', true);
             break;
           default:
             this.skipValue();
@@ -219,7 +220,7 @@ class ConfigJsonParser {
     return String.fromCharCode(code);
   }
 
-  private readLong(fieldName: string): number {
+  private readLong(fieldName: string, allowZero = false): number {
     this.skipWhitespace();
     const start = this.pos;
     if (this.pos < this.json.length && this.json[this.pos] === '-') {
@@ -232,18 +233,15 @@ class ConfigJsonParser {
       throw this.syntax('期望数字');
     }
     const num = this.json.slice(start, this.pos);
-    if (/[eE.]/.test(num)) {
-      throw new WopError(`配置字段 ${fieldName} 类型非法: ${num}`, 'configuration');
-    }
     const value = Number(num);
-    if (!Number.isSafeInteger(value) || value <= 0) {
+    if (!Number.isSafeInteger(value) || value < (allowZero ? 0 : 1)) {
       throw new WopError(`配置字段 ${fieldName} 类型非法: ${num}`, 'configuration');
     }
     return value;
   }
 
-  private readInt(fieldName: string): number {
-    const value = this.readLong(fieldName);
+  private readInt(fieldName: string, allowZero = false): number {
+    const value = this.readLong(fieldName, allowZero);
     if (value > 0x7fff_ffff) {
       throw new WopError(`配置字段 httpClient 类型非法: 数值越界`, 'configuration');
     }
@@ -296,10 +294,6 @@ class ConfigJsonParser {
   private skipLiteral(): void {
     while (this.pos < this.json.length && /[a-zA-Z]/.test(this.json[this.pos]!)) {
       this.pos++;
-    }
-    const literal = this.json.slice(this.pos - 4, this.pos);
-    if (literal === 'NaN' || literal.endsWith('NaN') || literal.includes('Infinity')) {
-      throw new WopError('配置字段 类型非法: NaN/Infinity', 'configuration');
     }
   }
 

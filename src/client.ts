@@ -244,8 +244,9 @@ export class WopClient {
       appKey: this.config.appKey,
       suite: this.config.suite,
       serverRoot: root ?? '',
-      backupServerRoots: this.config.backupServerRoots ?? [],
-      expiredSeconds: this.config.expiredSeconds ?? DEFAULT_EXPIRED_SECONDS,
+      // 构造器已归一为非空（backupServerRoots=[]/expiredSeconds=默认）
+      backupServerRoots: this.config.backupServerRoots!,
+      expiredSeconds: this.config.expiredSeconds!,
       httpClient: this.config.httpClient ?? {
         connectTimeout: 10_000,
         readTimeout: 30_000,
@@ -270,7 +271,7 @@ export class WopClient {
     options: RequestOptions = {},
   ): Promise<RequestDraft> {
     const level = options.level ?? 'L0';
-    const expired = options.expiredSeconds ?? this.config.expiredSeconds ?? DEFAULT_EXPIRED_SECONDS;
+    const expired = options.expiredSeconds ?? this.config.expiredSeconds!;
     const hasBody = body !== undefined && body !== '';
 
     validateApiPath(path);
@@ -279,10 +280,6 @@ export class WopClient {
     if (level === 'L2' && !hasBody) {
       throw new WopError('L2 加密需要非空 body', 'parse');
     }
-
-    const queryIdx = path.indexOf('?');
-    const rawPath = queryIdx >= 0 ? path.slice(0, queryIdx) : path;
-    const queryString = queryIdx >= 0 ? path.slice(queryIdx + 1) : '';
 
     // 1. 线上请求体与 L2 信封（§3.3②③/§6）：摘要对象 = wire 原始字节
     let wireBody = '';
@@ -314,8 +311,8 @@ export class WopClient {
     const canonical = canonicalRequest({
       authString,
       method,
-      path: rawPath,
-      queryString,
+      path,
+      queryString: '',
       headers,
     });
     const signature = toBase64Url(await rsaSign(this.merchantPriv, utf8Encode(canonical)));
@@ -326,9 +323,9 @@ export class WopClient {
     //    商户未传（含 trim 后为空）→ 缺省生成，最终头恒存在
     headers[REQUEST_ID_HEADER] = resolvedRequestId ?? (await WopClient.requestIdGenerator());
     // 附录 I/I3 日志义务：INFO 级打印最终透传头值（非敏感，豁免脱敏），供网关 AccessLog 关联排查
-    console.info(`x-wop-request-id=${headers[REQUEST_ID_HEADER]} ${method.toUpperCase()} ${rawPath}`);
+    console.info(`x-wop-request-id=${headers[REQUEST_ID_HEADER]} ${method.toUpperCase()} ${path}`);
 
-    return { method: method.toUpperCase(), path: rawPath, headers, wireBody };
+    return { method: method.toUpperCase(), path, headers, wireBody };
   }
 
   /**
