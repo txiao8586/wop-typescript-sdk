@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    globalSetup: ['./tests/fixtures/fetch-pinned.mjs'],
+    globalSetup: ['./tests/fetch-pinned.mjs'],
     include: ['tests/**/*.spec.ts'],
     environment: 'node',
     coverage: {
