@@ -31,6 +31,10 @@
       "publicPointB64": "BKYcUacrp3w6tPeXpkEb2yktpbGgfCOsob/F5yo9wq9+LvzIx2Isu+CGnf6Z89tTJpZxm5GX7VUDr8KdsxHzYKg=",
       "privateDB64": "RyJ/wB0tfgGGSgug0lKZoOwJlj2001kD5wbYmnmPFr0=",
       "format": "公钥 = 未压缩点 04||X||Y（65B，D12）；d = 32B 大端标量"
+    },
+    "rsa2048": {
+      "publicSpkiB64": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwE6teOkvLIsVXkcsZF9luU9bqB85gT+xhcTb2aT6FEKUbOhfVf68e97jXNlGzfkCyc6GYm8dd7jirPCaYHyMcYbvEcfMux+DWREDoZ6PpfJin219RjfQsjXKJfAybSG9pOIHUgYGUh5ZDv/SaI2ZR7/zIRcp7ouzwJUhhQbqIPjv2GNxIfQ0zb1baqgLOiV3mrSQa4e+3lIv1LmDCNOvnrPvoc7FqsCahQCwpXvcWR17hRgm0cVW5JhpKXDsCviesgG4f1Dq1moyQtdxAekUU1EnsZ0Lpj2WBwidM3jfNIdiYo+uYJ/RVPY0s75EguETzvda9PicDfFaWwcmlPhXKQIDAQAB",
+      "privatePkcs8B64": "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDATq146S8sixVeRyxkX2W5T1uoHzmBP7GFxNvZpPoUQpRs6F9V/rx73uNc2UbN+QLJzoZibx13uOKs8JpgfIxxhu8Rx8y7H4NZEQOhno+l8mKfbX1GN9CyNcol8DJtIb2k4gdSBgZSHlkO/9JojZlHv/MhFynui7PAlSGFBuog+O/YY3Eh9DTNvVtqqAs6JXeatJBrh77eUi/UuYMI06+es++hzsWqwJqFALCle9xZHXuFGCbRxVbkmGkpcOwK+J6yAbh/UOrWajJC13EB6RRTUSexnQumPZYHCJ0zeN80h2Jij65gn9FU9jSzvkSC4RPO91r0+JwN8VpbByaU+FcpAgMBAAECggEAAnX3Rw7v0zl35WgSf7nPSMzkyrzUjOx6WnB7kjhH2XLFKLQcBTMQaSLf5LAklW3obNnrUw7iMQYhA27EQPQTDYBZJpB4lJPph74dnmezpZ9Zhvn9EoUUEvW4f54IXShjf3zDdHeehNY91EDuibc3JQmGJFAiMZrgytf1sPi2zgNvy4JylHKEHj1jCYkW9ORqyHTMax3NfBf3q+NDbfuOmGYdUNDPQVypWwoa3NYbc6NeugxN4vPtYWxjFtBNDIt92rcM2Knmx1nwBcpxsdBYVJA1d5pQWEiKaQmBmdx0rl3YSFVjAG4FhvB/i84A/m4Oe6GMWR5J27rFUB+gmATFoQKBgQDfz7gAou21L9kIFSir1t6sYe4NL1kwHyB2rzuRLSFJo4mllZtH+jnq9Tjzp+vUnp4llnVQwMEYynAuXIko7c+OodxRZpRkJ51Xb96RYT44Y2amPri2mxDPqXOARwx0dS0o8JBc09vguaRmGDcs4GW5mCgdw8ncVDdHaFLBezbnIQKBgQDb9wsJC2qatPnM0EnW+sNTQSUultCyavTlL7z18TjN3B35oe6Odvi1/LHASjsKl3wiLVudoQrbR/qqY3iTC0pKa19E6xm5i9HkVPxP7Fw105dQBAjJ7d3YAkIndRZIOxcFdU205GgRvU9yGNxInHnGwO5ORipxucOGLa0xbb5XCQKBgE0g719AxrxvDdMMP6TgeoJbiUb/7zN3Np/QCa4hKFyRQClRIl8uq3D+Ky9Eyi/Ord90N1+p3aGmefxwJVB2i9WykBN5T2Aoir+MLN5a7a9PChv2d39udt+pnMUzNuaXTwXRyV5EIH0UXMRWSgVsG4JXHlQLmfAVEavJFuPYi3YhAoGAXQH9cYqZPecuBLNBtZv8gTR3g1aT0g01lb70uE2SBkF/jzEwTJ7zlQfPJQ5+HoFlJJJnPaR9kbDCxc8fiZVpiUQTWXHLQ9BiJJjmwuifKMdaIKREDxX8Cr0RudthW5NYrZ8nB0jY1D9m20i1xCIdv7OOUByND99LVG314IOVyvkCgYBK9LLwHe48BYv+z2bFlrBy1Mf6ouZ00tZLD9bW6gXwTavehD8YMecgRz6HQSOugn4S457kwxWkkBk5OK0Lx5rFy+m/s3UxUOy61+ZuBbq1B+okYGpYoleExC3MO3oYohRvTa4eC6oxTEw+42++/VZqeIBOMbAToQPq+genQakCMQ=="
     }
   },
   "digest": [
@@ -94,6 +98,14 @@
       "sigLenBytes": 64,
       "b64uLen": 86,
       "format": "裸 r||s 各 32B 大端，线上禁 DER（D9）"
+    },
+    {
+      "id": "rsa2048-sign",
+      "key": "rsa2048",
+      "message": "WOP 跨语言测试向量 2026-08-28 — The quick brown fox jumps over the lazy dog.",
+      "expectedSigB64u": "XvDm9xvadfHeuGOYFJjOx3-Cgen1wYZzWa9cOWIVvrSJdgTQ30w1P-yQzb3t2URU-tUaMHKx5W0Q_dWX2WK6KZxITEKw0quVrHyVT6VfcaXpZF03RKa7at8CWndy-ftOTvfY3KS79u4YNDoyJQ8nt6y-f9-uOVmQ0c4hy-yNI_mBPbBk3x06UOB4RNGKluFAxZiJyv1aIBNPXZL6Xe3YBtzpbVZrm3j1c-umtRxeIQ2lE6vPx3fRu-cjF2nwyrbmdLZmRfxvR7lNxcBCw2gf_RWi4YDyeLqMO1Y8k1yG8am39pjXkz3Ge9Q5WHPcD9KvEMOcl4heQR0JMgz3jd4mRw",
+      "sigLenBytes": 256,
+      "b64uLen": 342
     }
   ],
   "keyEncrypt": [
@@ -142,6 +154,14 @@
       "cipherB64u": "BHg6d-mtZjmeNpGrClMQUsW5CH_89nI-czPleXZbKuDxEbEauHrr7V8Xy4gvzfU7I48lYrL25lHyne9JrkMW5t4bm5iHKCLIsKNxZ-667Um1rjfOrsL4Am5-mZtuuOynXmXdmq2WgpVOiFEbZve4aQWuHEA0lV3a9_2-naepNKfNReot_YHPp1V9feu2Q54s",
       "expect": "reject",
       "note": "旧国标 C1C2C3 顺序密文，按 C1C3C2 解密必须失败 — 钉死顺序"
+    },
+    {
+      "id": "oaep2048-unwrap",
+      "key": "rsa2048",
+      "cipherB64u": "XZx1rVmmuxWpkRyg_bDEsWcQvHFGgxW1DyolC4KZM12cOAj6jLUSyUcofFcoLlV8qDm72AdiR2nqzIhdklw4K-eGH5jmqbSbZaHaFZgbm540ADt1kHP5FascR9_3TXZjVabxv6yAk5z7TcukjJIAJlwtGG1Vvf1M4tv1c3zJcGp0Gkuu4BpHgB7TBeao3c7y5bTEj-yD7V1XRUQwc_QF0Iyy-AAjB99UB_i00TbjuJQUT1qdiskL7NPylo4oRBfbsRJUOLBuZoQ8CBW-nVlyFPatqt_box9IX5wrPQsUHOm90Z-EPIGK-J3XG09Q8v5kaTGKpOqyvMD4wP5kwXo0rQ",
+      "expectedPlaintext": "AES-256-GCM$AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8$EBESExQVFhcYGRob",
+      "params": "OAEP(SHA-256, MGF1-SHA-256, empty label) — 显式参数化(F2)",
+      "expect": "unwrap-equals-plaintext"
     }
   ],
   "dekPayload": [

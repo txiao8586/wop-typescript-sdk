@@ -1,6 +1,6 @@
 import { loadDefault } from './config/loader';
 import type { HttpClientSettings, WopSdkConfig } from './config/types';
-import { maskConfigForLog } from './config/types';
+import { maskConfigForLog, DEFAULT_READ_TIMEOUT } from './config/types';
 import { joinUrl, validateApiPath } from './config/url';
 import { WopError, SIGNATURE_FAILED, DECRYPT_FAILED } from './error';
 import { WopGatewayResponseError } from './gatewayResponseError';
@@ -581,7 +581,8 @@ export class WopClient {
 
   private ensureTransport(): Transport {
     if (!this.transport) {
-      this.transport = new FetchTransport();
+      // readTimeout 从配置传入；未配置时由 FetchTransport 落到配置模型默认值
+      this.transport = new FetchTransport(this.config.httpClient?.readTimeout ?? DEFAULT_READ_TIMEOUT);
     }
     return this.transport;
   }

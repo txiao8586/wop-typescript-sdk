@@ -39,6 +39,17 @@ export function validateApiPath(path: string): void {
   if (typeof path !== 'string' || !path) {
     throw new WopError('请求路径为空', 'configuration');
   }
+  // 控制字符扫描须先于任何回显原值的错误：否则 CR/LF/<0x20/0x7F 可通过校验并在签名后的日志行伪造条目
+  for (const ch of path) {
+    const cp = ch.codePointAt(0)!;
+    if (cp < 0x20 || cp === 0x7f) {
+      // 不回显原值，只回显码点（防错误信息本身被注入）
+      throw new WopError(
+        `path 含控制字符（码点 U+${cp.toString(16).toUpperCase().padStart(4, '0')}），已拒绝`,
+        'configuration',
+      );
+    }
+  }
   if (!path.startsWith('/')) {
     throw new WopError(`path 须以 / 开头: ${path}`, 'configuration');
   }

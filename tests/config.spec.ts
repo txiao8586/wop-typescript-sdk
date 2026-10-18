@@ -239,6 +239,22 @@ describe('path 语法与 URL 拼接（§7.7）', () => {
     expect(() => validateApiPath('//attacker.example/path')).toThrowError(/不得 \/\/ 开头/);
   });
 
+  it('path 含控制字符拒绝（CR/LF/NUL/DEL/其余 <0x20），不回显原值只回显码点', () => {
+    const cases = ['/p\nFAKE', '/p\rFAKE', '/p\tFAKE', '/p\x00FAKE', '/p\x7FFAKE'];
+    for (const bad of cases) {
+      let err: WopError | undefined;
+      try {
+        validateApiPath(bad);
+      } catch (e) {
+        err = e as WopError;
+      }
+      expect(err, `path=${JSON.stringify(bad)}`).toBeInstanceOf(WopError);
+      expect(err!.category, `path=${JSON.stringify(bad)}`).toBe('configuration');
+      expect(err!.message, `path=${JSON.stringify(bad)}`).toMatch(/控制字符/);
+      expect(err!.message, `path=${JSON.stringify(bad)}`).not.toContain('FAKE'); // 原值不回显（防日志二次注入）
+    }
+  });
+
   it('非字符串 path 抛 WopError 而非原生 TypeError（Sourcery CR）', () => {
     for (const bad of [null, undefined, 42, {}]) {
       expect(() => validateApiPath(bad as unknown as string)).toThrowError(WopError);
