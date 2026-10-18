@@ -9,10 +9,10 @@
 
 | # | 位置 | 算子 | 锚 | 等价原因 |
 |---|------|------|----|---------|
-| 1 | client.ts:347 | cond-lt `dekIdx < 0` → `<= 0` | `}` | `dekIdx === 0` 不可达：进入该分支要求头以 `l2` 开头（`startsWith`），而 `indexOf('dek=') === 0` 要求头以 `dek=` 开头，二者互斥 | |
-| 2 | client.ts:322 | bool `sigOk = true` → `false` | `authString: `${protocolV` | 初值唯一读取点在 `rsaVerify` 返回后立即覆盖；rsaVerify 抛错路径经 catch 显式赋 `false`，两初值在所有路径终值一致 | |
-| 3 | client.ts:262 | string `'parse'` category 追加 | `}` | `verifyResponse` 捕获 WopError 后仅外显 `e.message`；内部 category 无任何可观测通道（对外契约是 VerifyResult{ok,reason}） | |
-| 4 | client.ts:368 | string `'consistency'` category 追加 | `// 一律归入解密类模糊（I7 保守默认，int` | 同上 | |
+| 1 | client.ts:533 | cond-lt `dekIdx < 0` → `<= 0` | `if (dekIdx < 0)` | `dekIdx === 0` 不可达：进入该分支要求头以 `l2` 开头（`startsWith`），而 `indexOf('dek=') === 0` 要求头以 `dek=` 开头，二者互斥 | |
+| 2 | `client.ts:502` | bool `sigOk = true` → `false` | `authString: `${protocolV` | 初值唯一读取点在 `rsaVerify` 返回后立即覆盖；rsaVerify 抛错路径经 catch 显式赋 `false`，两初值在所有路径终值一致 | |
+| 3 | client.ts:435 | string `'parse'` category 追加 | `throw new WopError('响应缺少 x-wop-sign 头'` | `verifyResponse` 捕获 WopError 后仅外显 `e.message`；内部 category 无任何可观测通道（对外契约是 VerifyResult{ok,reason}） | |
+| 4 | `client.ts:548` | string `'consistency'` category 追加 | `// 一律归入解密类模糊（I7 保守默认，int` | 同上 | |
 | 5 | crypto.ts:146 | cond-lt `len < 16` → `<= 16` | `if (cipherTag.length < 1` | 16B 输入：短路路径抛 `DECRYPT_FAILED`；非短路走 WebCrypto GCM（空明文+16B tag）tag 校验失败同抛 `DECRYPT_FAILED`（I7 模糊化使两路径文案恒同） | |
 | 6 | crypto.ts:146 | numeric `16` → `17` | `if (cipherTag.length < 1` | 15/16B 输入两路径同文案（同上）；17B+ 输入不受阈值影响 | |
 | 7 | crypto.ts:146 | stmt-del 删除短路 if | `if (cipherTag.length < 1` | 15B 输入走 WebCrypto 失败 → 同文案（同上） | |

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { WopClient } from '../src/client';
 import { canonicalRequest } from '../src/canonical';
 import { computeDigestHeader } from '../src/digest';
@@ -153,12 +153,20 @@ describe('buildRequest（F3/F4/F5/F9）', () => {
     expect(await verifyDraftCanonical(draft.headers, 'POST', '/v1/order/create', '', fromBase64(MERCH_PUB))).toBe(true);
   });
 
-  it('幂等（可重放生成）：注入 timestamp/nonce 后两次输出全等', async () => {
+  it('幂等（可重放生成）：注入 timestamp/nonce/缺省 requestId 生成器后两次输出全等', async () => {
     const client = makeClient();
-    const opts = { timestamp: 1770000000000, nonce: 'fixednonce' };
-    const a = await client.buildRequest('POST', '/p', BODY, opts);
-    const b = await client.buildRequest('POST', '/p', BODY, opts);
-    expect(a).toEqual(b);
+    // 附录 I/I3：缺省 requestId 属 CSPRNG 豁免项；注入固定生成器后全头字节级可重放
+    const gen = WopClient.requestIdGenerator;
+    WopClient.requestIdGenerator = async () => 'fixedreq000000000000000000000001';
+    try {
+      const opts = { timestamp: 1770000000000, nonce: 'fixednonce' };
+      const a = await client.buildRequest('POST', '/p', BODY, opts);
+      const b = await client.buildRequest('POST', '/p', BODY, opts);
+      expect(a).toEqual(b);
+      expect(a.headers['x-wop-request-id']).toBe('fixedreq000000000000000000000001');
+    } finally {
+      WopClient.requestIdGenerator = gen;
+    }
   });
 
   it('默认 CSPRNG：nonce 为 32 位 hex 且两次不同（F9）', async () => {
@@ -186,19 +194,16 @@ describe('buildRequest（F3/F4/F5/F9）', () => {
     expect(draft.headers).not.toHaveProperty('x-wop-content-digest');
   });
 
-  it('path 带 query string：拆分后分别入 canonical', async () => {
+  it('path 含 query string → configuration 拒绝（§7.7）', async () => {
     const client = makeClient();
-    const draft = await client.buildRequest('GET', '/list?status=PAID&page=2', undefined, {
-      timestamp: 1,
-      nonce: 'n',
+    await expect(client.buildRequest('GET', '/list?status=PAID&page=2')).rejects.toMatchObject({
+      category: 'configuration',
     });
-    expect(draft.path).toBe('/list');
-    expect(await verifyDraftCanonical(draft.headers, 'GET', '/list', 'status=PAID&page=2', fromBase64(MERCH_PUB))).toBe(true);
   });
 
-  it('path 不以 / 开头 → 解析类拒绝', async () => {
+  it('path 不以 / 开头 → configuration 拒绝', async () => {
     const client = makeClient();
-    await expect(client.buildRequest('POST', 'v1/x', BODY)).rejects.toThrowError(/路径/);
+    await expect(client.buildRequest('POST', 'v1/x', BODY)).rejects.toMatchObject({ category: 'configuration' });
   });
 
   it('L2：wireBody={"encrypted":…}、digest 对密文载体、encrypt 头入签', async () => {
@@ -407,5 +412,111 @@ describe('verifyResponse / verifyCallback（F6 顺序 + I7 模糊化）', () => 
     const client = makeClient();
     const { headers, body } = await platformRespond('/cb', BODY);
     expect((await client.verifyCallback(headers, body, '/cb')).ok).toBe(true);
+  });
+});
+
+describe('x-wop-request-id 透传头（wop-specs 附录 I）', () => {
+  it('显式传值：trim 后原值上行，除 trim 外禁止改写', async () => {
+    const client = makeClient();
+    const draft = await client.buildRequest('GET', '/p', undefined, {
+      timestamp: 1,
+      nonce: 'n',
+      requestId: '  req-001  ',
+    });
+    expect(draft.headers['x-wop-request-id']).toBe('req-001');
+  });
+
+  it('恒不入签：x-wop-request-id 不在 signedHeaders，带/不带透传头 x-wop-sign 字节同值（I1）', async () => {
+    const client = makeClient();
+    const withId = await client.buildRequest('GET', '/p', undefined, {
+      timestamp: 1,
+      nonce: 'n',
+      requestId: 'req-001',
+    });
+    const without = await client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n' });
+    const signedNames = withId.headers['x-wop-sign']!.split('/')[2]!.split(';');
+    expect(signedNames).not.toContain('x-wop-request-id');
+    expect(withId.headers['x-wop-sign']).toBe(without.headers['x-wop-sign']);
+  });
+
+  it('未传/空白 → 缺省生成 UUID 去连字符（小写 32 hex），头恒存在且每次新鲜（I3）', async () => {
+    const client = makeClient();
+    const a = await client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n' });
+    expect(a.headers['x-wop-request-id']).toMatch(/^[0-9a-f]{32}$/);
+    const b = await client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n' });
+    expect(b.headers['x-wop-request-id']).toMatch(/^[0-9a-f]{32}$/);
+    expect(a.headers['x-wop-request-id']).not.toBe(b.headers['x-wop-request-id']);
+    // 空格 trim 后为空 → 视为未设置，走缺省生成（\t/\n 属控制字符，trim 前扫描即拒——见下例）
+    const blank = await client.buildRequest('GET', '/p', undefined, {
+      timestamp: 1,
+      nonce: 'n',
+      requestId: '   ',
+    });
+    expect(blank.headers['x-wop-request-id']).toMatch(/^[0-9a-f]{32}$/);
+  });
+
+  it('控制字符 trim 前原值扫描即拒（CR/LF/NUL/DEL/中间位置，防头注入，I2）', async () => {
+    const client = makeClient();
+    for (const bad of ['a\nb', 'a\rb', 'a\0b', 'a\x7fb', 'a\tb', '\nlead', 'trail\r', ' \t ', '\0', '\x7f']) {
+      await expect(
+        client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n', requestId: bad }),
+      ).rejects.toMatchObject({ category: 'configuration' });
+      await expect(
+        client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n', requestId: bad }),
+      ).rejects.toThrow(/控制字符/);
+    }
+  });
+
+  it('长度按 trim 后 UTF-8 字节计 ≤128（非字符数；I2）', async () => {
+    const client = makeClient();
+    // 128 ASCII 字节 OK
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n', requestId: 'x'.repeat(128) }),
+    ).resolves.toBeDefined();
+    // 129 字节拒
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n', requestId: 'x'.repeat(129) }),
+    ).rejects.toThrow(/UTF-8 字节长度不能超过 128（实际 129）/);
+    // 42 中文字符 = 126 字节 OK；43 = 129 字节拒
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n', requestId: '标'.repeat(42) }),
+    ).resolves.toBeDefined();
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n', requestId: '标'.repeat(43) }),
+    ).rejects.toThrow(/UTF-8 字节长度不能超过 128（实际 129）/);
+  });
+
+  it('日志义务：出向构造点打印最终透传头值（INFO 级，豁免脱敏，I3）', async () => {
+    const client = makeClient();
+    const spy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    try {
+      await client.buildRequest('GET', '/p', undefined, { timestamp: 1, nonce: 'n', requestId: 'logreq001' });
+      expect(spy).toHaveBeenCalledTimes(1);
+      const line = String(spy.mock.calls[0]![0]);
+      expect(line).toContain('x-wop-request-id=logreq001');
+      expect(line).toContain('GET /p');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('execute 路径：requestId 经 options 透传上行（fetch mock 捕获请求头）', async () => {
+    const client = new WopClient({
+      appKey: 'test-app-key',
+      suite: 'WOP-RSA3072-SHA256',
+      merchantPrivateKey: MERCH_PRIV,
+      platformPublicKey: PLAT_PUB,
+      serverRoot: 'https://gw.example.com/gateway',
+    });
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200, headers: {} }));
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      await client.execute('GET', '/p', undefined, { timestamp: 1, nonce: 'n', requestId: 'exec-001' });
+      const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1]!;
+      expect((init.headers as Record<string, string>)['x-wop-request-id']).toBe('exec-001');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

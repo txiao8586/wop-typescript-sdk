@@ -60,7 +60,7 @@ describe('套件解析（F1，spec §2）', () => {
   });
 
   it('算法不在支持列表 → 支持类明确拒绝', () => {
-    for (const bad of ['WOP-RSA2048-SHA256', 'WOP-RSA3072-SHA384', 'WOP-SM4-SM3', 'WOP-ECDSA-SHA256']) {
+    for (const bad of ['WOP-RSA1024-SHA256', 'WOP-RSA3072-SHA384', 'WOP-SM4-SM3', 'WOP-ECDSA-SHA256']) {
       try {
         parseSecurityReq(bad);
         expect.unreachable(`应拒绝：${bad}`);
@@ -69,6 +69,15 @@ describe('套件解析（F1，spec §2）', () => {
         expect((e as WopError).message).toContain('不支持的算法');
       }
     }
+  });
+
+  it('WOP-RSA2048-SHA256：默认支持（crypto-spec E1 扩展位），定长 342 字符', () => {
+    const suite = parseSecurityReq('WOP-RSA2048-SHA256');
+    expect(suite.keyLength).toBe(2048);
+    expect(suite.signatureB64uLength).toBe(342);
+    expect(suite.digestLabel).toBe('sha-256');
+    expect(suite.expectedDekAlg).toBe('AES-256-GCM');
+    expect(parseSecurityReq('WOP-RSA2048-SHA256')).toBe(suite); // 缓存单例
   });
 
   it('跨族组合 → 支持类拒绝（I5，§2.3）', () => {

@@ -80,7 +80,8 @@ const draftL2 = await client.buildRequest('POST', '/v1/order/create', body, { le
 // draftL2.wireBody = {"encrypted":"<base64url(ct||tag)>"}; headers include x-wop-encrypt: L2;dek=…
 
 // GET without body: x-wop-content-digest is absent by design (D2)
-const draftGet = await client.buildRequest('GET', '/v1/order/query?status=PAID');
+// Note: paths containing `?` are rejected at build time (see Breaking changes)
+const draftGet = await client.buildRequest('GET', '/v1/order/query');
 
 // Use axios transport (optional peer)
 import { AxiosTransport } from '@wanlianyida/wop-typescript-sdk/axios';
@@ -100,7 +101,7 @@ npm test          # full suite (includes vector conformance)
 npm run coverage  # coverage report (line+branch ≥98% gate, currently 100%)
 ```
 
-Vector coverage: RSA3072/4096 signatures, OAEP wrap/unwrap (including the MGF1-SHA-1 trap negative vector),
+Vector coverage: RSA2048/3072/4096 signatures, OAEP wrap/unwrap (including the MGF1-SHA-1 trap negative vector),
 AES-256-GCM with fixed IV, SHA-256 digest and digest-header format rules (D2 single space / lowercase hex /
 cross-family rejection / strict unpadded base64url).
 

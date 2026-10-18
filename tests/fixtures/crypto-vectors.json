@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "spec": "docs/crypto-strategy-spec.md v0.3-reviewed（附录 B.2 / D9）",
+    "spec": "crypto/crypto-strategy-spec.md v0.4-draft（附录 B.2 / D9）",
     "generated": "2026-08-28",
     "testOnly": true,
     "note": "全部密钥/k/IV 为 TEST-ONLY；固定 IV 仅为字节级断言，生产违反不变式 I4",
@@ -19,6 +19,10 @@
     "sm2FixedKB64u": "WSduJ9UGhhsfpb4hNL5rYrHI-4ybHVsffnwsDh4aKw"
   },
   "keys": {
+    "rsa2048": {
+      "publicSpkiB64": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwE6teOkvLIsVXkcsZF9luU9bqB85gT+xhcTb2aT6FEKUbOhfVf68e97jXNlGzfkCyc6GYm8dd7jirPCaYHyMcYbvEcfMux+DWREDoZ6PpfJin219RjfQsjXKJfAybSG9pOIHUgYGUh5ZDv/SaI2ZR7/zIRcp7ouzwJUhhQbqIPjv2GNxIfQ0zb1baqgLOiV3mrSQa4e+3lIv1LmDCNOvnrPvoc7FqsCahQCwpXvcWR17hRgm0cVW5JhpKXDsCviesgG4f1Dq1moyQtdxAekUU1EnsZ0Lpj2WBwidM3jfNIdiYo+uYJ/RVPY0s75EguETzvda9PicDfFaWwcmlPhXKQIDAQAB",
+      "privatePkcs8B64": "MIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDATq146S8sixVeRyxkX2W5T1uoHzmBP7GFxNvZpPoUQpRs6F9V/rx73uNc2UbN+QLJzoZibx13uOKs8JpgfIxxhu8Rx8y7H4NZEQOhno+l8mKfbX1GN9CyNcol8DJtIb2k4gdSBgZSHlkO/9JojZlHv/MhFynui7PAlSGFBuog+O/YY3Eh9DTNvVtqqAs6JXeatJBrh77eUi/UuYMI06+es++hzsWqwJqFALCle9xZHXuFGCbRxVbkmGkpcOwK+J6yAbh/UOrWajJC13EB6RRTUSexnQumPZYHCJ0zeN80h2Jij65gn9FU9jSzvkSC4RPO91r0+JwN8VpbByaU+FcpAgMBAAECggEAAnX3Rw7v0zl35WgSf7nPSMzkyrzUjOx6WnB7kjhH2XLFKLQcBTMQaSLf5LAklW3obNnrUw7iMQYhA27EQPQTDYBZJpB4lJPph74dnmezpZ9Zhvn9EoUUEvW4f54IXShjf3zDdHeehNY91EDuibc3JQmGJFAiMZrgytf1sPi2zgNvy4JylHKEHj1jCYkW9ORqyHTMax3NfBf3q+NDbfuOmGYdUNDPQVypWwoa3NYbc6NeugxN4vPtYWxjFtBNDIt92rcM2Knmx1nwBcpxsdBYVJA1d5pQWEiKaQmBmdx0rl3YSFVjAG4FhvB/i84A/m4Oe6GMWR5J27rFUB+gmATFoQKBgQDfz7gAou21L9kIFSir1t6sYe4NL1kwHyB2rzuRLSFJo4mllZtH+jnq9Tjzp+vUnp4llnVQwMEYynAuXIko7c+OodxRZpRkJ51Xb96RYT44Y2amPri2mxDPqXOARwx0dS0o8JBc09vguaRmGDcs4GW5mCgdw8ncVDdHaFLBezbnIQKBgQDb9wsJC2qatPnM0EnW+sNTQSUultCyavTlL7z18TjN3B35oe6Odvi1/LHASjsKl3wiLVudoQrbR/qqY3iTC0pKa19E6xm5i9HkVPxP7Fw105dQBAjJ7d3YAkIndRZIOxcFdU205GgRvU9yGNxInHnGwO5ORipxucOGLa0xbb5XCQKBgE0g719AxrxvDdMMP6TgeoJbiUb/7zN3Np/QCa4hKFyRQClRIl8uq3D+Ky9Eyi/Ord90N1+p3aGmefxwJVB2i9WykBN5T2Aoir+MLN5a7a9PChv2d39udt+pnMUzNuaXTwXRyV5EIH0UXMRWSgVsG4JXHlQLmfAVEavJFuPYi3YhAoGAXQH9cYqZPecuBLNBtZv8gTR3g1aT0g01lb70uE2SBkF/jzEwTJ7zlQfPJQ5+HoFlJJJnPaR9kbDCxc8fiZVpiUQTWXHLQ9BiJJjmwuifKMdaIKREDxX8Cr0RudthW5NYrZ8nB0jY1D9m20i1xCIdv7OOUByND99LVG314IOVyvkCgYBK9LLwHe48BYv+z2bFlrBy1Mf6ouZ00tZLD9bW6gXwTavehD8YMecgRz6HQSOugn4S457kwxWkkBk5OK0Lx5rFy+m/s3UxUOy61+ZuBbq1B+okYGpYoleExC3MO3oYohRvTa4eC6oxTEw+42++/VZqeIBOMbAToQPq+genQakCMQ=="
+    },
     "rsa3072": {
       "publicSpkiB64": "MIIBojANBgkqhkiG9w0BAQEFAAOCAY8AMIIBigKCAYEAtXJuxrDjAOOFB7P2Mo0P9+Dp/gYZauIHNKxDazym3NDVe510+F+0XNK3jfL0JY5MqCCTpEybRl0hJrV1sPWNbReug9N8FSZ8N9qyMSC/FTlXA8X9yMDfwYMWsCudh6KkHVeFUaKj8uqeEVpuOLuV061jNzbOkPw3Os8xH1c5tnLTYTFyPY5teX+YkX+6cz7Bspmtv2eY1+6/SmoYLmwTxwuN07XKGlxMlQ8uDaLwHnoy0svHT+yYp7roa+nGZ0HxLjk2k/XNNc0ipWNDhjpxcpAK3YcyNViyCOSrgu3KEiGwpNx5UpkrARIo7V6fqbi2Qg+rX+AxtV6ccbfMXe2J2HBqn+8R0MfuNRvEulT0DZetL40huJQ0UGbDw+K1oK2BSAvz2gWe1Tkm0kfcYFYm9pjJV6MzUnTeRPxuZfHHzG/JZqO/5krkt3ZlQmPb3M8xu8peUMr9KFMIJ1fJEH8cp/+NkrZIDtdAv5DAofu2TAzekFxDQ3HcwIgkLWTQcGkjAgMBAAE=",
       "privatePkcs8B64": "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"
@@ -71,6 +75,14 @@
   ],
   "signature": [
     {
+      "id": "rsa2048-sign",
+      "key": "rsa2048",
+      "message": "WOP 跨语言测试向量 2026-08-28 — The quick brown fox jumps over the lazy dog.",
+      "expectedSigB64u": "XvDm9xvadfHeuGOYFJjOx3-Cgen1wYZzWa9cOWIVvrSJdgTQ30w1P-yQzb3t2URU-tUaMHKx5W0Q_dWX2WK6KZxITEKw0quVrHyVT6VfcaXpZF03RKa7at8CWndy-ftOTvfY3KS79u4YNDoyJQ8nt6y-f9-uOVmQ0c4hy-yNI_mBPbBk3x06UOB4RNGKluFAxZiJyv1aIBNPXZL6Xe3YBtzpbVZrm3j1c-umtRxeIQ2lE6vPx3fRu-cjF2nwyrbmdLZmRfxvR7lNxcBCw2gf_RWi4YDyeLqMO1Y8k1yG8am39pjXkz3Ge9Q5WHPcD9KvEMOcl4heQR0JMgz3jd4mRw",
+      "sigLenBytes": 256,
+      "b64uLen": 342
+    },
+    {
       "id": "rsa3072-sign",
       "key": "rsa3072",
       "message": "WOP 跨语言测试向量 2026-08-28 — The quick brown fox jumps over the lazy dog.",
@@ -97,6 +109,14 @@
     }
   ],
   "keyEncrypt": [
+    {
+      "id": "oaep2048-unwrap",
+      "key": "rsa2048",
+      "cipherB64u": "XZx1rVmmuxWpkRyg_bDEsWcQvHFGgxW1DyolC4KZM12cOAj6jLUSyUcofFcoLlV8qDm72AdiR2nqzIhdklw4K-eGH5jmqbSbZaHaFZgbm540ADt1kHP5FascR9_3TXZjVabxv6yAk5z7TcukjJIAJlwtGG1Vvf1M4tv1c3zJcGp0Gkuu4BpHgB7TBeao3c7y5bTEj-yD7V1XRUQwc_QF0Iyy-AAjB99UB_i00TbjuJQUT1qdiskL7NPylo4oRBfbsRJUOLBuZoQ8CBW-nVlyFPatqt_box9IX5wrPQsUHOm90Z-EPIGK-J3XG09Q8v5kaTGKpOqyvMD4wP5kwXo0rQ",
+      "expectedPlaintext": "AES-256-GCM$AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8$EBESExQVFhcYGRob",
+      "params": "OAEP(SHA-256, MGF1-SHA-256, empty label) — 显式参数化(F2)",
+      "expect": "unwrap-equals-plaintext"
+    },
     {
       "id": "oaep3072-unwrap",
       "key": "rsa3072",

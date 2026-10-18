@@ -1,0 +1,14 @@
+{
+  "appKey": "YOUR_APP_KEY",
+  "suite": "WOP-RSA3072-SHA256",
+  "merchantPrivateKey": "YOUR_MERCHANT_PRIVATE_KEY",
+  "platformPublicKey": "YOUR_PLATFORM_PUBLIC_KEY",
+  "serverRoot": "https://gw.example.com/gateway",
+  "backupServerRoots": [],
+  "expiredSeconds": 1800,
+  "httpClient": {
+    "connectTimeout": 10000,
+    "readTimeout": 30000,
+    "maxRetryCount": 3
+  }
+}

@@ -20,7 +20,7 @@ export interface AlgorithmSuite {
     // (undocumented)
     readonly keyAlgorithm: 'RSA';
     // (undocumented)
-    readonly keyLength: 3072 | 4096;
+    readonly keyLength: 2048 | 3072 | 4096;
     // (undocumented)
     readonly keyWrapAlgorithm: string;
     // (undocumented)
@@ -29,8 +29,11 @@ export interface AlgorithmSuite {
     readonly securityReq: string;
     // (undocumented)
     readonly signAlgorithm: 'SHA256withRSA';
-    readonly signatureB64uLength: 512 | 683;
+    readonly signatureB64uLength: 342 | 512 | 683;
 }
+
+// @public
+export function buildConfig(input: Partial<WopSdkConfig> & Pick<WopSdkConfig, 'appKey' | 'suite' | 'merchantPrivateKey' | 'platformPublicKey' | 'serverRoot'>): WopSdkConfig;
 
 // @public
 export function buildDekPayload(alg: string, key: Uint8Array, iv: Uint8Array): string;
@@ -47,10 +50,34 @@ export function canonicalHeaders(headers: Record<string, string>): string;
 export function canonicalRequest(input: CanonicalRequestInput): string;
 
 // @public
+export function clearCache(): void;
+
+// @public
 export function computeDigestHeader(body: Uint8Array | string): Promise<string>;
+
+// @public (undocumented)
+export const CONFIG_FILE_ENV = "WOP_SDK_CONFIG";
+
+// @public (undocumented)
+export const CONFIG_FILE_ENV_OVERRIDE = "WOP_SDK_CONFIG_FILE";
 
 // @public
 export const DECRYPT_FAILED = "\u89E3\u5BC6\u5931\u8D25";
+
+// @public (undocumented)
+export const DEFAULT_CONNECT_TIMEOUT = 10000;
+
+// @public (undocumented)
+export const DEFAULT_EXPIRED_SECONDS = 1800;
+
+// @public (undocumented)
+export const DEFAULT_MAX_RETRY_COUNT = 3;
+
+// @public (undocumented)
+export const DEFAULT_READ_TIMEOUT = 30000;
+
+// @public
+export function defaultHttpClientSettings(): HttpClientSettings;
 
 // @public
 export interface DekPayload {
@@ -64,6 +91,7 @@ export interface DekPayload {
 
 // @public
 export class FetchTransport implements Transport {
+    constructor(readTimeoutMs?: number);
     send(request: TransportRequest): Promise<TransportResponse>;
 }
 
@@ -77,16 +105,41 @@ export function fromBase64Url(s: string): Bytes;
 export function fromHex(s: string): Bytes;
 
 // @public
+export interface HttpClientSettings {
+    // (undocumented)
+    connectTimeout: number;
+    // (undocumented)
+    maxRetryCount: number;
+    // (undocumented)
+    readTimeout: number;
+}
+
+// @public
 export function javaUrlEncode(s: string | null | undefined): string;
 
 // @public
+export function joinUrl(serverRoot: string, path: string): string;
+
+// @public
 export function keyMaterialToDer(input: string): Bytes;
+
+// @public
+export function load(location: string): WopSdkConfig;
+
+// @public
+export function loadDefault(): WopSdkConfig;
+
+// @public
+export function maskConfigForLog(config: Pick<WopSdkConfig, 'appKey' | 'suite' | 'serverRoot' | 'backupServerRoots' | 'expiredSeconds' | 'httpClient'>): string;
 
 // @public
 export function oaepUnwrap(privPkcs8: Uint8Array, cipher: Uint8Array): Promise<Bytes>;
 
 // @public
 export function oaepWrap(pubSpki: Uint8Array, plaintext: Uint8Array): Promise<Bytes>;
+
+// @public
+export function parseConfigJson(json: string | null | undefined): WopSdkConfig;
 
 // @public
 export function parseDekPayload(payload: string): DekPayload;
@@ -114,6 +167,7 @@ export interface RequestOptions {
     iv?: Uint8Array;
     level?: 'L0' | 'L2';
     nonce?: string;
+    requestId?: string;
     timestamp?: number;
 }
 
@@ -181,6 +235,15 @@ export function utf8Decode(bytes: Uint8Array): string;
 // @public
 export function utf8Encode(s: string): Bytes;
 
+// @public
+export function validateAndNormalize(raw: WopSdkConfig): WopSdkConfig;
+
+// @public
+export function validateApiPath(path: string): void;
+
+// @public
+export function validateGatewayUrl(value: string | null | undefined, fieldName: string): string;
+
 // Warning: (ae-forgotten-export) The symbol "ParsedDigestHeader" needs to be exported by the entry point index.d.ts
 //
 // @public
@@ -203,10 +266,16 @@ export class WopClient {
     buildRequest(method: string, path: string, body?: string, options?: RequestOptions): Promise<RequestDraft>;
     // (undocumented)
     readonly config: WopConfig;
+    static defaultClient(): WopClient;
+    execute(method: string, path: string, body?: string, options?: RequestOptions): Promise<VerifyResult>;
+    static fromConfig(config: WopSdkConfig | WopConfig): WopClient;
+    static requestIdGenerator: () => Promise<string>;
+    static resetDefault(): void;
     send(method: string, path: string, body?: string, options?: RequestOptions): Promise<SendResult>;
     setTransport(transport: Transport): void;
     // (undocumented)
     readonly suite: AlgorithmSuite;
+    toString(): string;
     verifyCallback(headers: Record<string, string>, body: string, callbackPath: string): Promise<VerifyResult>;
     verifyResponse(headers: Record<string, string>, body: string, requestPath: string): Promise<VerifyResult>;
 }
@@ -215,22 +284,57 @@ export class WopClient {
 export interface WopConfig {
     // (undocumented)
     appKey: string;
-    // (undocumented)
+    backupServerRoots?: readonly string[];
+    expiredSeconds?: number;
+    // @deprecated (undocumented)
     gatewayBaseUrl?: string;
+    httpClient?: HttpClientSettings;
     merchantPrivateKey: string;
     platformPublicKey: string;
+    serverRoot?: string;
     suite: string;
+    transport?: Transport;
 }
 
 // @public
 export class WopError extends Error {
-    constructor(message: string, category?: WopErrorCategory);
+    constructor(message: string, category?: WopErrorCategory, cause?: unknown);
     // (undocumented)
     readonly category: WopErrorCategory;
 }
 
 // @public
-export type WopErrorCategory = 'parse' | 'unsupported' | 'integrity' | 'signature' | 'decrypt' | 'consistency' | 'system';
+export type WopErrorCategory = 'parse' | 'unsupported' | 'integrity' | 'signature' | 'decrypt' | 'consistency' | 'configuration' | 'system';
+
+// @public
+export class WopGatewayResponseError extends Error {
+    constructor(statusCode: number, body: string);
+    // (undocumented)
+    readonly body: string;
+    // (undocumented)
+    readonly statusCode: number;
+}
+
+// @public
+export interface WopSdkConfig {
+    // (undocumented)
+    appKey: string;
+    // (undocumented)
+    backupServerRoots: readonly string[];
+    // (undocumented)
+    expiredSeconds: number;
+    // (undocumented)
+    httpClient: HttpClientSettings;
+    // (undocumented)
+    merchantPrivateKey: string;
+    // (undocumented)
+    platformPublicKey: string;
+    // (undocumented)
+    serverRoot: string;
+    // (undocumented)
+    suite: string;
+    transport?: Transport;
+}
 
 // (No @packageDocumentation comment for this package)
 

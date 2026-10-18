@@ -7,6 +7,27 @@
 
 export { WopError, SIGNATURE_FAILED, DECRYPT_FAILED } from './error';
 export type { WopErrorCategory } from './error';
+export { WopGatewayResponseError } from './gatewayResponseError';
+export {
+  loadDefault,
+  load,
+  clearCache,
+  parseConfigJson,
+  validateAndNormalize,
+  buildConfig,
+  validateGatewayUrl,
+  validateApiPath,
+  joinUrl,
+  CONFIG_FILE_ENV,
+  CONFIG_FILE_ENV_OVERRIDE,
+  DEFAULT_CONNECT_TIMEOUT,
+  DEFAULT_READ_TIMEOUT,
+  DEFAULT_MAX_RETRY_COUNT,
+  DEFAULT_EXPIRED_SECONDS,
+  defaultHttpClientSettings,
+  maskConfigForLog,
+} from './config';
+export type { WopSdkConfig, HttpClientSettings } from './config';
 export { parseSecurityReq } from './suite';
 export type { AlgorithmSuite } from './suite';
 export { canonicalRequest, canonicalHeaders, javaUrlEncode, trimall } from './canonical';

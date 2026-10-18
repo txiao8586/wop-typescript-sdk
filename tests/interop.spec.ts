@@ -338,7 +338,11 @@ describe('interop 消费：build 方向（同输入复现同 draft）', () => {
         }
         expect(got, `${c.id}: 头 ${name} = ${got}, want ${want}`).toBe(want);
       }
-      expect(Object.keys(draft.headers).length, `${c.id}: 头集合不一致`).toBe(
+      // x-wop-request-id 是规格附录 I 的可选透传头（恒不入签、网关日志关联用），
+      // 不属于 interop 冻结的协议头合同（fixture sha256 钉死不可改），比对前剥离
+      const protocolHeaders = { ...draft.headers };
+      delete protocolHeaders['x-wop-request-id'];
+      expect(Object.keys(protocolHeaders).length, `${c.id}: 头集合不一致`).toBe(
         Object.keys(expected.headers).length,
       );
     }

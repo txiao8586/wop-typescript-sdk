@@ -42,6 +42,7 @@ describe('FetchTransport（原生 fetch 适配器）', () => {
     expect(init.method).toBe('POST');
     expect(init.headers).toEqual({ 'x-wop-appkey': 'ak' });
     expect(init.body).toBe('{"a":1}');
+    expect(init.redirect).toBe('manual');
     expect(resp.status).toBe(200);
     expect(resp.headers['x-wop-sign']).toBe('WOP-RSA3072-SHA256 v1/1/a/AAAA');
     expect(resp.body).toBe('{"ok":true}');
@@ -69,6 +70,73 @@ describe('FetchTransport（原生 fetch 适配器）', () => {
     await expect(
       new FetchTransport().send({ method: 'GET', url: 'https://x', headers: {}, body: '' }),
     ).rejects.toThrowError(/请求发送失败/);
+  });
+});
+
+describe('FetchTransport 响应超时（防无限挂起）', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('send 恒携带 AbortSignal.timeout（默认与显式构造均接线）', async () => {
+    const fetchMock = vi.fn(async () => new Response('ok', { status: 200 }));
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    await new FetchTransport().send({ method: 'GET', url: 'https://x', headers: {}, body: '' });
+    await new FetchTransport(60_000).send({ method: 'GET', url: 'https://x', headers: {}, body: '' });
+    for (const call of fetchMock.mock.calls as unknown as [string, RequestInit][]) {
+      expect(call[1]!.signal).toBeInstanceOf(AbortSignal);
+    }
+  });
+
+  it('挂起服务器 + readTimeoutMs=50 → 系统类错误快速失败（真实 fetch）', async () => {
+    const server = http.createServer(() => {
+      /* 收到请求但不响应：模拟网关挂起 */
+    });
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    const { port } = server.address() as AddressInfo;
+    const t0 = Date.now();
+    let caught: unknown;
+    try {
+      await new FetchTransport(50).send({
+        method: 'GET',
+        url: `http://127.0.0.1:${port}/hang`,
+        headers: {},
+        body: '',
+      });
+    } catch (e) {
+      caught = e;
+    } finally {
+      server.close();
+    }
+    expect(caught).toBeInstanceOf(WopError);
+    expect((caught as WopError).category).toBe('system');
+    expect((caught as WopError).message).toMatch(/请求发送失败/);
+    expect(Date.now() - t0).toBeLessThan(5_000);
+  });
+
+  it('WopClient 默认传输接收配置 readTimeout（httpClient → AbortSignal）', async () => {
+    const server = http.createServer(() => {
+      /* 挂起 */
+    });
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
+    const { port } = server.address() as AddressInfo;
+    const client = new WopClient({
+      appKey: 'ak',
+      suite: 'WOP-RSA3072-SHA256',
+      merchantPrivateKey: vectors.keys.rsa3072!.privatePkcs8B64,
+      platformPublicKey: vectors.keys.rsa3072!.publicSpkiB64,
+      gatewayBaseUrl: `http://127.0.0.1:${port}`,
+      httpClient: { connectTimeout: 1_000, readTimeout: 50, maxRetryCount: 0 },
+    });
+    const t0 = Date.now();
+    try {
+      await expect(client.send('GET', '/hang')).rejects.toMatchObject({ category: 'system' });
+    } finally {
+      server.close();
+    }
+    expect(Date.now() - t0).toBeLessThan(5_000);
   });
 });
 
@@ -234,14 +302,14 @@ describe('响应体 11MiB 上限（与 dotnet MaxResponseBytes / Go maxResponseB
 });
 
 describe('WopClient.send（Transport 编排）', () => {
-  it('gatewayBaseUrl 未配置 → 系统类错误', async () => {
+  it('serverRoot 未配置 → configuration 错误', async () => {
     const client = new WopClient({
       appKey: 'ak',
       suite: 'WOP-RSA3072-SHA256',
       merchantPrivateKey: vectors.keys.rsa3072!.privatePkcs8B64,
       platformPublicKey: vectors.keys.rsa3072!.publicSpkiB64,
     });
-    await expect(client.send('POST', '/p', '{"a":1}')).rejects.toThrowError(/gatewayBaseUrl/);
+    await expect(client.send('POST', '/p', '{"a":1}')).rejects.toMatchObject({ category: 'configuration' });
   });
 
   it('默认 FetchTransport：全链路 send→verify（mock fetch 返回已签名响应）', async () => {

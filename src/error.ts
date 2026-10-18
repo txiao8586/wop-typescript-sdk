@@ -13,14 +13,15 @@ export type WopErrorCategory =
   | 'signature'
   | 'decrypt'
   | 'consistency'
+  | 'configuration'
   | 'system';
 
 /** SDK 统一错误:category 取 WopErrorCategory,对外语义明确/模糊按分类规则 */
 export class WopError extends Error {
   readonly category: WopErrorCategory;
 
-  constructor(message: string, category: WopErrorCategory = 'parse') {
-    super(message);
+  constructor(message: string, category: WopErrorCategory = 'parse', cause?: unknown) {
+    super(message, cause !== undefined ? { cause } : undefined);
     this.name = 'WopError';
     this.category = category;
   }

@@ -1,4 +1,5 @@
 import { WopError } from '../error';
+import { DEFAULT_READ_TIMEOUT } from '../config/types';
 import type { Transport, TransportRequest, TransportResponse } from './types';
 
 /**
@@ -11,9 +12,17 @@ export const MAX_RESPONSE_BYTES = 11 << 20;
  * fetch 原生适配器（零依赖，Node ≥18 / 浏览器）。
  */
 export class FetchTransport implements Transport {
+  // shortcut: fetch无connect/read分离超时,总时长按readTimeout近似,待P2拆分
+  constructor(private readonly readTimeoutMs: number = DEFAULT_READ_TIMEOUT) {}
+
   /** 发送请求并结构化返回;发送失败抛 system,越限语义见类注释 */
   async send(request: TransportRequest): Promise<TransportResponse> {
-    const init: RequestInit = { method: request.method, headers: request.headers };
+    const init: RequestInit = {
+      method: request.method,
+      headers: request.headers,
+      redirect: 'manual', // §7.4.1：不跟随重定向，避免改写已签名语义
+      signal: AbortSignal.timeout(this.readTimeoutMs), // 防无限挂起；超时随 fetch 抛出归入 system
+    };
     if (request.body !== '') {
       init.body = request.body;
     }
