@@ -108,8 +108,19 @@ const ENCRYPT_HEADER_PREFIX = 'l2';
 /** 附录 I 透传头名（恒不入签；签名计算完成后写入） */
 const REQUEST_ID_HEADER = 'x-wop-request-id';
 
-/** 附录 I/I2 trim 集 = 附录 G2 TrimAll 空白类（空格、\t、\n、\x0B、\f、\r），不用 String.trim（Unicode 空白超集） */
-const TRIM_ALL_RE = /^[ \t\n\x0B\f\r]+|[ \t\n\x0B\f\r]+$/g;
+/** 附录 I/I2 trim 集 = 附录 G2 TrimAll 空白类（空格、\t、\n、\x0B、\f、\r）。
+ * 逐字符扫描去两端（CodeQL：正则量词在超长重复串上有回溯放大面，线性扫描等价且无此面）；
+ * 不用 String.trim（Unicode 空白超集）。
+ */
+function trimAll(s: string): string {
+  const isWs = (cp: number) =>
+    cp === 0x20 || (cp >= 0x09 && cp <= 0x0d); // \t \n \x0B \f \r
+  let start = 0;
+  let end = s.length;
+  while (start < end && isWs(s.charCodeAt(start))) start++;
+  while (end > start && isWs(s.charCodeAt(end - 1))) end--;
+  return s.slice(start, end);
+}
 
 /**
  * 缺省 requestId 生成（附录 I/I3）：UUID 去连字符（小写 32 hex，v4 语义）。
@@ -141,7 +152,7 @@ function resolveRequestId(raw: string | undefined): string | null {  if (raw ===
       throw new WopError(`requestId 含控制字符（防头注入）: ${cp}`, 'configuration');
     }
   }
-  const trimmed = raw.replace(TRIM_ALL_RE, '');
+  const trimmed = trimAll(raw);
   if (trimmed === '') return null;
   const utf8Len = utf8Encode(trimmed).length;
   if (utf8Len > 128) {
