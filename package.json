@@ -62,7 +62,7 @@
     "test:dist": "node tests/fetch-pinned.mjs && publint && attw --pack . && api-extractor run && api-extractor run -c api-extractor.axios.json && node tests/smoke.cjs && node tests/smoke.mjs",
     "api:snapshot": "api-extractor run --local && api-extractor run --local -c api-extractor.axios.json",
     "coverage": "vitest run --coverage",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node tests/fetch-pinned.mjs && tsc --noEmit",
     "test:bdd": "node tests/fetch-pinned.mjs && node --import tsx node_modules/@cucumber/cucumber/bin/cucumber.js tests/features --import \"tests/features/steps/**/*.ts\" --format summary",
     "test:mutation": "node tests/fetch-pinned.mjs && node tests/mutation/run-mutations.mjs",
     "release": "commit-and-tag-version",
