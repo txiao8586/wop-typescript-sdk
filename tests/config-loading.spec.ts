@@ -192,20 +192,22 @@ describe('loader：发现与读取', () => {
   });
 
   it('候选存在但不可读则跳过', () => {
+    // chmod 0o000 在 windows 无 POSIX 语义：改拦 accessSync（平台无关）
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wop-noperm-'));
-    const blocked = writeConfig(dir, 'config/wopSdkConfig.json', '{ bad');
-    const good = writeConfig(dir, 'wopSdkConfig.json', validConfigJson());
-    fs.chmodSync(blocked, 0o000);
+    writeConfig(dir, 'config/wopSdkConfig.json', '{ bad');
+    writeConfig(dir, 'wopSdkConfig.json', validConfigJson());
     const cwd = process.cwd();
     process.chdir(dir);
+    const acc = vi.spyOn(fs, 'accessSync').mockImplementation((p) => {
+      if (String(p).includes(`config${path.sep}`)) throw new Error('EACCES: mocked');
+    });
     try {
       clearCache();
       expect(loadDefault().appKey).toBe('app_001');
     } finally {
+      acc.mockRestore();
       process.chdir(cwd);
-      fs.chmodSync(blocked, 0o644);
     }
-    void good;
   });
 
   it('显式路径不存在', () => {

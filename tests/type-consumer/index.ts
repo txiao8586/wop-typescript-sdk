@@ -67,9 +67,9 @@ type AssertEq<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : never;
 const t1: AssertEq<VerifyResult['ok'], boolean> = true;
 const t2: AssertEq<RequestDraft['wireBody'], string> = true;
-const t3: AssertEq<AlgorithmSuite['keyLength'], 3072 | 4096> = true;
+const t3: AssertEq<AlgorithmSuite['keyLength'], 2048 | 3072 | 4096> = true;
 const t4: AssertEq<SendResult extends VerifyResult ? true : false, true> = true;
-const t5: AssertEq<WopErrorCategory, 'parse' | 'unsupported' | 'integrity' | 'signature' | 'decrypt' | 'consistency' | 'system'> = true;
+const t5: AssertEq<WopErrorCategory, 'parse' | 'unsupported' | 'integrity' | 'signature' | 'decrypt' | 'consistency' | 'configuration' | 'system'> = true;
 const t6: AssertEq<TransportRequest['body'], string> = true;
 const t7: AssertEq<TransportResponse['headers'], Record<string, string>> = true;
 
@@ -96,7 +96,7 @@ const axiosTransport: Transport = new AxiosTransport();
 client.setTransport(fetchTransport);
 
 const suite: AlgorithmSuite = parseSecurityReq('WOP-RSA3072-SHA256');
-const sigLen: 512 | 683 = suite.signatureB64uLength;
+const sigLen: 342 | 512 | 683 = suite.signatureB64uLength;
 const dekAlg: 'AES-256-GCM' = suite.expectedDekAlg;
 
 const REQ: TransportRequest = {
