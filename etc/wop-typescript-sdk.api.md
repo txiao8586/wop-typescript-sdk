@@ -91,6 +91,7 @@ export interface DekPayload {
 
 // @public
 export class FetchTransport implements Transport {
+    constructor(readTimeoutMs?: number);
     send(request: TransportRequest): Promise<TransportResponse>;
 }
 

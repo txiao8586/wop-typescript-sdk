@@ -66,7 +66,7 @@ export interface RequestOptions {
    * 商户请求标识（wop-specs 附录 I：x-wop-request-id 透传头，恒不入签；须为不含个人数据的
    * 不透明关联标识）。null/undefined/空白 → 缺省生成 UUID 去连字符（头恒存在）；
    * 显式传值 → trim 后原值上行，除 trim 外禁止任何改写。构造即校验：
-   * 控制字符（trim 前原值扫描，CR/LF/NUL/DEL）与超长（trim 后 UTF-8 字节 > 128）均拒。
+   * 控制字符（trim 前原值扫描，CR/LF/NUL/DEL）与超长（trim 后 UTF-8 字节 \> 128）均拒。
    */
   requestId?: string;
 }
