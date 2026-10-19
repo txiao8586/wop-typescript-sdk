@@ -15,6 +15,8 @@ import {
   rsaSign,
   toBase64Url,
   utf8Encode,
+  aesGcmEncrypt,
+  aesGcmDecrypt,
 } from '../src/index';
 import { canonicalRequest } from '../src/canonical';
 import { WopClient } from '../src/client';
@@ -24,7 +26,7 @@ import { platformRespond } from './features/steps/platform';
 import type { AxiosInstance } from 'axios';
 import vectors from './fixtures/crypto-vectors.json';
 import { parseConfigJson } from '../src/config/configJsonParser';
-import { validateAndNormalize } from '../src/config/configValidator';
+import { validateAndNormalize, buildConfig } from '../src/config/configValidator';
 import { load, loadDefault, clearCache } from '../src/config/loader';
 import { validateGatewayUrl, validateApiPath } from '../src/config/url';
 import fs from 'node:fs';
@@ -466,6 +468,15 @@ describe('crypto.ts：webcrypto 回退契约（全 Node 版本）', () => {
   it('返回实现恒具备 subtle（Node 18 无全局时回退 node:crypto.webcrypto）', async () => {
     expect((await webcrypto()).subtle).toBeDefined();
   });
+
+  it('空明文 GCM 加解密往返：cipherTag 恰 16B 放行（len<16 阈值上侧，击杀 #5/#6）', async () => {
+    const key = new Uint8Array(32).fill(7);
+    const iv = new Uint8Array(12).fill(9);
+    const cipherTag = await aesGcmEncrypt(key, iv, new Uint8Array(0));
+    expect(cipherTag.length).toBe(16);
+    const plain = await aesGcmDecrypt(key, iv, cipherTag);
+    expect(plain.length).toBe(0);
+  });
 });
 
 /**
@@ -525,6 +536,15 @@ describe('config 链：必填项/默认值/字段映射/边界全等（2026-10 �
     expect(cfg.httpClient.connectTimeout).toBe(10000);
     expect(cfg.httpClient.readTimeout).toBe(30000);
     expect(cfg.httpClient.maxRetryCount).toBe(3);
+  });
+
+  it('buildConfig 省略可选设置 → ?? 回退默认值全等（程序化路径，K11；击杀 configValidator #49-52）', () => {
+    const input = { ...baseOk } as Parameters<typeof buildConfig>[0];
+    delete (input as Record<string, unknown>).backupServerRoots;
+    const cfg = buildConfig(input);
+    expect(cfg.expiredSeconds).toBe(1800);
+    expect(cfg.httpClient).toEqual({ connectTimeout: 10000, readTimeout: 30000, maxRetryCount: 3 });
+    expect([...cfg.backupServerRoots]).toEqual([]);
   });
 });
 
@@ -606,6 +626,14 @@ describe('configJsonParser：解析器文案/字段映射/数值边界全等（2
     ) as unknown as { appKey: string };
     expect(cfg.appKey).toBe('a中');
   });
+
+  it('\\u 转义 4 位 hex 后即 EOF（无闭合引号）→ 字符串未闭合（pos+4==len 上侧不误报，击杀 #39/#40）', () => {
+    expectThrow(
+      () => parseConfigJson('{"appKey":"a\\u4e2d'),
+      '配置文件 JSON 解析失败: 字符串未闭合',
+      'configuration',
+    );
+  });
 });
 
 describe('loader/url：加载与校验文案全等 + path 边界（2026-10 增量）', () => {
@@ -616,7 +644,8 @@ describe('loader/url：加载与校验文案全等 + path 边界（2026-10 增�
   it('显式路径不存在 → 消息全等 + configuration', () => {
     expectThrow(
       () => load('/nonexistent-dir-xyz/nope.json'),
-      '显式配置文件不可读: /nonexistent-dir-xyz/nope.json',
+      // load() 内 path.resolve：Windows 将 POSIX 绝对路径解析为盘符路径，期望值须同构
+      `显式配置文件不可读: ${path.resolve('/nonexistent-dir-xyz/nope.json')}`,
       'configuration',
     );
   });

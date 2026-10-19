@@ -1,7 +1,7 @@
 {
   "total": 425,
-  "killed": 388,
-  "score": 0.9129411764705883,
+  "killed": 399,
+  "score": 0.9388235294117647,
   "byOp": {
     "arith-plus": {
       "total": 12,
@@ -9,7 +9,7 @@
     },
     "numeric": {
       "total": 55,
-      "killed": 47
+      "killed": 53
     },
     "stmt-del": {
       "total": 99,
@@ -17,11 +17,11 @@
     },
     "cond-lt": {
       "total": 22,
-      "killed": 11
+      "killed": 12
     },
     "cond-gt": {
       "total": 8,
-      "killed": 4
+      "killed": 5
     },
     "logic-and": {
       "total": 17,
@@ -45,7 +45,7 @@
     },
     "string": {
       "total": 95,
-      "killed": 87
+      "killed": 90
     },
     "shift": {
       "total": 4,
@@ -194,66 +194,6 @@
       "detail": "exit=0"
     },
     {
-      "id": "configJsonParser.ts:203",
-      "op": "cond-gt",
-      "file": "src/config/configJsonParser.ts",
-      "start": 5841,
-      "end": 5842,
-      "replacement": ">=",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "configJsonParser.ts:203",
-      "op": "numeric",
-      "file": "src/config/configJsonParser.ts",
-      "start": 5839,
-      "end": 5840,
-      "replacement": "5",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "configValidator.ts:68",
-      "op": "numeric",
-      "file": "src/config/configValidator.ts",
-      "start": 2592,
-      "end": 2596,
-      "replacement": "1801",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "configValidator.ts:70",
-      "op": "numeric",
-      "file": "src/config/configValidator.ts",
-      "start": 2658,
-      "end": 2664,
-      "replacement": "10001",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "configValidator.ts:71",
-      "op": "numeric",
-      "file": "src/config/configValidator.ts",
-      "start": 2685,
-      "end": 2691,
-      "replacement": "30001",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "configValidator.ts:72",
-      "op": "numeric",
-      "file": "src/config/configValidator.ts",
-      "start": 2714,
-      "end": 2715,
-      "replacement": "4",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
       "id": "configValidator.ts:36",
       "op": "stmt-del",
       "file": "src/config/configValidator.ts",
@@ -274,62 +214,12 @@
       "detail": "exit=0"
     },
     {
-      "id": "loader.ts:102",
-      "op": "string",
-      "file": "src/config/loader.ts",
-      "start": 2922,
-      "end": 2923,
-      "replacement": "@mut'",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
       "id": "loader.ts:113",
       "op": "string",
       "file": "src/config/loader.ts",
       "start": 3207,
       "end": 3208,
       "replacement": "@mut'",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "loader.ts:140",
-      "op": "string",
-      "file": "src/config/loader.ts",
-      "start": 3956,
-      "end": 3957,
-      "replacement": "@mut'",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "loader.ts:144",
-      "op": "string",
-      "file": "src/config/loader.ts",
-      "start": 4274,
-      "end": 4275,
-      "replacement": "@mut'",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "crypto.ts:146",
-      "op": "cond-lt",
-      "file": "src/crypto.ts",
-      "start": 4355,
-      "end": 4356,
-      "replacement": "<=",
-      "killed": false,
-      "detail": "exit=0"
-    },
-    {
-      "id": "crypto.ts:146",
-      "op": "numeric",
-      "file": "src/crypto.ts",
-      "start": 4357,
-      "end": 4359,
-      "replacement": "17",
       "killed": false,
       "detail": "exit=0"
     },

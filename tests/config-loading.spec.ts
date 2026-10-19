@@ -439,7 +439,17 @@ describe('分支残余第二轮', () => {
       let calls = 0;
       const spy = vi.spyOn(fs, 'existsSync').mockImplementation(() => (calls += 1) === 1);
       clearCache();
-      expect(() => loadDefault()).toThrowError(/^配置文件不可读/);
+      // 消息全等而非正则前缀：击杀 loader 非显式「配置文件不可读」字符串追加变异（#47）
+      let raceErr: unknown;
+      try {
+        loadDefault();
+      } catch (e) {
+        raceErr = e;
+      }
+      // process.cwd()：chdir 后 macOS 解析 /private 前缀，与 discover 的 path.resolve 同构
+      expect((raceErr as WopError).message).toBe(`配置文件不可读: ${path.join(process.cwd(), 'config', 'wopSdkConfig.json')}`);
+      // category 全等：loader.ts:102 的 string 变异点是 'configuration'（模板串不被 string 算子捕获），杀 #47
+      expect((raceErr as WopError).category).toBe('configuration');
       spy.mockRestore();
       // discover 可读、readUtf8 阶段失权：模拟并发 chmod
       let acc = 0;
@@ -451,7 +461,15 @@ describe('分支残余第二轮', () => {
         }
       });
       clearCache();
-      expect(() => loadDefault()).toThrowError(/^配置文件不可读/);
+      // category 全等：同上，杀 loader.ts:102 string 变异（#47）
+      let raceErr2: unknown;
+      try {
+        loadDefault();
+      } catch (e) {
+        raceErr2 = e;
+      }
+      expect((raceErr2 as WopError).message).toBe(`配置文件不可读: ${path.join(process.cwd(), 'config', 'wopSdkConfig.json')}`);
+      expect((raceErr2 as WopError).category).toBe('configuration');
       spy2.mockRestore();
       spy3.mockRestore();
     } finally {
@@ -459,12 +477,29 @@ describe('分支残余第二轮', () => {
     }
   });
 
-  it('未找到消息含空白 env 时仍列出该来源', () => {
+  it('未找到消息全等（空白 env 仍列出该来源；杀 loader.ts:140/144 string 变异 #41/#42）', () => {
     vi.spyOn(fs, 'existsSync').mockReturnValue(false);
     vi.stubEnv(CONFIG_FILE_ENV_OVERRIDE, '   ');
     vi.stubEnv(CONFIG_FILE_ENV, ' ');
     clearCache();
-    expect(() => loadDefault()).toThrowError(/WOP_SDK_CONFIG/);
+    let nfErr: unknown;
+    try {
+      loadDefault();
+    } catch (e) {
+      nfErr = e;
+    }
+    // bundledDiscovery 三元读原始（未 trim）env 值，空白串仍列出变量名
+    expect((nfErr as WopError).message).toBe(
+      [
+        '未找到可读的配置文件，已尝试：',
+        `${CONFIG_FILE_ENV_OVERRIDE}=${process.env[CONFIG_FILE_ENV_OVERRIDE]}`,
+        `${CONFIG_FILE_ENV}=${process.env[CONFIG_FILE_ENV]}`,
+        path.join(process.cwd(), 'config', 'wopSdkConfig.json'),
+        path.join(process.cwd(), 'wopSdkConfig.json'),
+        path.join(os.homedir(), '.wop', 'wopSdkConfig.json'),
+        'config/wopSdkConfig.json',
+      ].join('\n'),
+    );
   });
 
   it('joinUrl 尾斜杠归一', () => {
