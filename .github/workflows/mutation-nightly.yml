@@ -1,0 +1,30 @@
+# mutation 门禁夜巡：src 演进后幸存面漂移检测（每 PR 跑太慢 ~50min，nightly + 手动）
+# 契约：红 ≠ 立即事故，而是 report.json 已陈旧——本地重跑 `pnpm test:mutation`
+# 刷新 report 并在 EQUIVALENT-MUTANTS.md 追加增量轮论证，经 PR 落库。
+name: Mutation Nightly
+
+on:
+  schedule:
+    - cron: '17 20 * * *' # UTC 20:17 = 北京 04:17，避开整点扎堆
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-nightly
+  cancel-in-progress: true
+
+jobs:
+  mutation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:mutation
