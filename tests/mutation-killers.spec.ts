@@ -15,6 +15,8 @@ import {
   rsaSign,
   toBase64Url,
   utf8Encode,
+  aesGcmEncrypt,
+  aesGcmDecrypt,
 } from '../src/index';
 import { canonicalRequest } from '../src/canonical';
 import { WopClient } from '../src/client';
@@ -23,6 +25,13 @@ import { AxiosTransport } from '../src/transport/axios';
 import { platformRespond } from './features/steps/platform';
 import type { AxiosInstance } from 'axios';
 import vectors from './fixtures/crypto-vectors.json';
+import { parseConfigJson } from '../src/config/configJsonParser';
+import { validateAndNormalize, buildConfig } from '../src/config/configValidator';
+import { load, loadDefault, clearCache } from '../src/config/loader';
+import { validateGatewayUrl, validateApiPath } from '../src/config/url';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 /**
  * 变异击杀测试：针对变异运行（tests/mutation/run-mutations.mjs）暴露的幸存点，
@@ -458,5 +467,311 @@ describe.skipIf(!globalWebcrypto)('crypto.ts：webcrypto 直取全局（快路�
 describe('crypto.ts：webcrypto 回退契约（全 Node 版本）', () => {
   it('返回实现恒具备 subtle（Node 18 无全局时回退 node:crypto.webcrypto）', async () => {
     expect((await webcrypto()).subtle).toBeDefined();
+  });
+
+  it('空明文 GCM 加解密往返：cipherTag 恰 16B 放行（len<16 阈值上侧，击杀 #5/#6）', async () => {
+    const key = new Uint8Array(32).fill(7);
+    const iv = new Uint8Array(12).fill(9);
+    const cipherTag = await aesGcmEncrypt(key, iv, new Uint8Array(0));
+    expect(cipherTag.length).toBe(16);
+    const plain = await aesGcmDecrypt(key, iv, cipherTag);
+    expect(plain.length).toBe(0);
+  });
+});
+
+/**
+ * 2026-10 增量击杀：src 演进（RSA2048/L2/crypto-provider 等）后变异点 262→425，
+ * 新幸存集中于 config 加载链、execute 链与 URL/path 校验。以下按「契约可观测面」
+ * 全等断言击杀：错误消息+category、默认值、字段映射、协议边界（2xx/0x20/0x7f/0x7fffffff）。
+ */
+describe('config 链：必填项/默认值/字段映射/边界全等（2026-10 增量）', () => {
+  const baseOk: Record<string, unknown> = {
+    appKey: 'ak',
+    suite: 'WOP-RSA3072-SHA256',
+    merchantPrivateKey: MERCH_PRIV,
+    platformPublicKey: PLAT_PUB,
+    serverRoot: 'https://gw.test',
+    backupServerRoots: [],
+  };
+
+  it('五个必填项逐个缺失 → 消息全等 + category configuration', () => {
+    for (const field of ['appKey', 'suite', 'merchantPrivateKey', 'platformPublicKey', 'serverRoot']) {
+      const raw = { ...baseOk };
+      delete raw[field];
+      expectThrow(
+        () => validateAndNormalize(raw as unknown as Parameters<typeof validateAndNormalize>[0]),
+        `配置文件缺少必填项: ${field}`,
+        'configuration',
+      );
+    }
+  });
+
+  it('expiredSeconds=0 → 消息全等 + configuration', () => {
+    expectThrow(
+      () => validateAndNormalize({ ...baseOk, expiredSeconds: 0 } as unknown as Parameters<typeof validateAndNormalize>[0]),
+      'expiredSeconds 须为正整数',
+      'configuration',
+    );
+  });
+
+  it('不支持套件 → 消息全等 + category configuration（parseSecurityReq 异常被包装）', () => {
+    expectThrow(
+      () => validateAndNormalize({ ...baseOk, suite: 'WOP-RSA1-SHA0' } as unknown as Parameters<typeof validateAndNormalize>[0]),
+      '不支持的算法套件: WOP-RSA1-SHA0',
+      'configuration',
+    );
+  });
+
+  it('serverRoot 非 HTTPS 经 validateAndNormalize 链路 → fieldName 字面量全等（41 行）', () => {
+    expectThrow(
+      () => validateAndNormalize({ ...baseOk, serverRoot: 'http://x.test' } as unknown as Parameters<typeof validateAndNormalize>[0]),
+      'serverRoot 须为 HTTPS 绝对 URL: http://x.test',
+      'configuration',
+    );
+  });
+
+  it('四项默认值全等：1800/10000/30000/3（缺省输入）', () => {
+    const cfg = parseConfigJson(JSON.stringify(baseOk));
+    expect(cfg.expiredSeconds).toBe(1800);
+    expect(cfg.httpClient.connectTimeout).toBe(10000);
+    expect(cfg.httpClient.readTimeout).toBe(30000);
+    expect(cfg.httpClient.maxRetryCount).toBe(3);
+  });
+
+  it('buildConfig 省略可选设置 → ?? 回退默认值全等（程序化路径，K11；击杀 configValidator #49-52）', () => {
+    const input = { ...baseOk } as Parameters<typeof buildConfig>[0];
+    delete (input as Record<string, unknown>).backupServerRoots;
+    const cfg = buildConfig(input);
+    expect(cfg.expiredSeconds).toBe(1800);
+    expect(cfg.httpClient).toEqual({ connectTimeout: 10000, readTimeout: 30000, maxRetryCount: 3 });
+    expect([...cfg.backupServerRoots]).toEqual([]);
+  });
+});
+
+describe('configJsonParser：解析器文案/字段映射/数值边界全等（2026-10 增量）', () => {
+  it('空串与纯空白 → 空内容/空文件 消息全等 + configuration', () => {
+    expectThrow(() => parseConfigJson(null), '配置文件 JSON 解析失败: 空内容', 'configuration');
+    expectThrow(() => parseConfigJson('  '), '配置文件 JSON 解析失败: 空文件', 'configuration');
+  });
+
+  it('字符串未闭合 → 消息全等', () => {
+    expectThrow(() => parseConfigJson('{"a":"b'), '配置文件 JSON 解析失败: 字符串未闭合', 'configuration');
+  });
+
+  it('httpClient 字段名映射：connectTimeout/readTimeout/maxRetryCount 显式值逐位生效', () => {
+    const cfg = parseConfigJson(
+      JSON.stringify({
+        appKey: 'ak',
+        suite: 'WOP-RSA3072-SHA256',
+        merchantPrivateKey: MERCH_PRIV,
+        platformPublicKey: PLAT_PUB,
+        serverRoot: 'https://gw.test',
+        httpClient: { connectTimeout: 1234, readTimeout: 5678, maxRetryCount: 7 },
+      }),
+    );
+    expect(cfg.httpClient.connectTimeout).toBe(1234);
+    expect(cfg.httpClient.readTimeout).toBe(5678);
+    expect(cfg.httpClient.maxRetryCount).toBe(7);
+  });
+
+  it('httpClient 类型非法 → 消息全等 + category configuration（readInt 包装）', () => {
+    expectThrow(
+      () => parseConfigJson('{"httpClient": {"connectTimeout": "abc"}}'),
+      '配置文件 JSON 解析失败: 期望数字',
+      'configuration',
+    );
+  });
+
+  it('int32 双侧边界：2147483647 合法、2147483648 越界拒（>0x7fff_ffff 语义）', () => {
+    const full = {
+      appKey: 'ak',
+      suite: 'WOP-RSA3072-SHA256',
+      merchantPrivateKey: MERCH_PRIV,
+      platformPublicKey: PLAT_PUB,
+      serverRoot: 'https://gw.test',
+    };
+    const max = JSON.stringify({ ...full, httpClient: { connectTimeout: 2147483647 } });
+    expect(parseConfigJson(max).httpClient.connectTimeout).toBe(2147483647);
+    expectThrow(() =>
+      parseConfigJson('{"httpClient": {"connectTimeout": 2147483648}}'),
+      '配置字段 httpClient 类型非法: 数值越界',
+      'configuration',
+    );
+  });
+
+  it('负值触发 readInt 包装消息 → fieldName 全等（connectTimeout/maxRetryCount）', () => {
+    expectThrow(
+      () => parseConfigJson('{"httpClient": {"connectTimeout": -1}}'),
+      '配置字段 connectTimeout 类型非法: -1',
+      'configuration',
+    );
+    expectThrow(
+      () => parseConfigJson('{"httpClient": {"maxRetryCount": -1}}'),
+      '配置字段 maxRetryCount 类型非法: -1',
+      'configuration',
+    );
+  });
+
+  it('unicode 转义恰 4 位到串尾 → 正常解析（pos+4 边界不误报）', () => {
+    const cfg = parseConfigJson(
+      JSON.stringify({
+        appKey: 'ak',
+        suite: 'WOP-RSA3072-SHA256',
+        merchantPrivateKey: MERCH_PRIV,
+        platformPublicKey: PLAT_PUB,
+        serverRoot: 'https://gw.test',
+        backupServerRoots: [],
+        appKey2: 'x',
+      }).replace('"appKey2": "x",', '').replace('"appKey":"ak"', '"appKey":"a\\u4e2d"').replace('"appKey": "ak"', '"appKey": "a\\u4e2d"'),
+    ) as unknown as { appKey: string };
+    expect(cfg.appKey).toBe('a中');
+  });
+
+  it('\\u 转义 4 位 hex 后即 EOF（无闭合引号）→ 字符串未闭合（pos+4==len 上侧不误报，击杀 #39/#40）', () => {
+    expectThrow(
+      () => parseConfigJson('{"appKey":"a\\u4e2d'),
+      '配置文件 JSON 解析失败: 字符串未闭合',
+      'configuration',
+    );
+  });
+});
+
+describe('loader/url：加载与校验文案全等 + path 边界（2026-10 增量）', () => {
+  it('load("") → 消息全等 + configuration', () => {
+    expectThrow(() => load(''), '配置文件路径不能为空', 'configuration');
+  });
+
+  it('显式路径不存在 → 消息全等 + configuration', () => {
+    expectThrow(
+      () => load('/nonexistent-dir-xyz/nope.json'),
+      // load() 内 path.resolve：Windows 将 POSIX 绝对路径解析为盘符路径，期望值须同构
+      `显式配置文件不可读: ${path.resolve('/nonexistent-dir-xyz/nope.json')}`,
+      'configuration',
+    );
+  });
+
+  it('env override 变量名生效：WOP_SDK_CONFIG_FILE 指到临时文件加载成功；失效时消息含变量名', () => {
+    const file = path.join(os.tmpdir(), `wop-mut-kill-${Date.now()}.json`);
+    fs.writeFileSync(
+      file,
+      JSON.stringify({
+        appKey: 'env-app',
+        suite: 'WOP-RSA3072-SHA256',
+        merchantPrivateKey: MERCH_PRIV,
+        platformPublicKey: PLAT_PUB,
+        serverRoot: 'https://gw.test',
+      }),
+    );
+    process.env.WOP_SDK_CONFIG_FILE = file;
+    try {
+      clearCache();
+      expect(loadDefault().appKey).toBe('env-app');
+    } finally {
+      delete process.env.WOP_SDK_CONFIG_FILE;
+      clearCache();
+      fs.rmSync(file, { force: true });
+    }
+  });
+
+  it('validateGatewayUrl 四态文案全等 + configuration', () => {
+    expectThrow(() => validateGatewayUrl('', 'serverRoot'), 'serverRoot 不是合法 URL: ', 'configuration');
+    expectThrow(() => validateGatewayUrl('not-a-url', 'serverRoot'), 'serverRoot 不是合法 URL: not-a-url', 'configuration');
+    expectThrow(() => validateGatewayUrl('http://gw.test', 'serverRoot'), 'serverRoot 须为 HTTPS 绝对 URL: http://gw.test', 'configuration');
+    expectThrow(() => validateGatewayUrl('https://gw.test?q=1', 'serverRoot'), 'serverRoot 不得含 query 或 fragment: https://gw.test?q=1', 'configuration');
+  });
+
+  it('validateApiPath 四态文案全等 + 空格放行/DEL 拒绝（0x20/0x7f 边界）', () => {
+    const DEL = String.fromCharCode(0x7f);
+    expectThrow(() => validateApiPath(''), '请求路径为空', 'configuration');
+    expectThrow(() => validateApiPath('https://x.test/p'), 'path 不得为绝对 URL: https://x.test/p', 'configuration');
+    expectThrow(() => validateApiPath('p'), 'path 须以 / 开头: p', 'configuration');
+    expectThrow(() => validateApiPath('//p'), 'path 不得 // 开头: //p', 'configuration');
+    expect(() => validateApiPath('/a b')).not.toThrow(); // 空格(0x20)非控制字符
+    expectThrow(() => validateApiPath('/a' + DEL), 'path 含控制字符（码点 U+007F），已拒绝', 'configuration');
+  });
+});
+
+/** 2026-10 增量块共用：最小合法配置构造 */
+const makeMutClient = (overrides: Record<string, unknown> = {}): WopClient =>
+  new WopClient({
+    appKey: 'ak',
+    suite: 'WOP-RSA3072-SHA256',
+    merchantPrivateKey: MERCH_PRIV,
+    platformPublicKey: PLAT_PUB,
+    ...overrides,
+  } as ConstructorParameters<typeof WopClient>[0]);
+
+describe('execute 链：serverRoot/2xx 边界/网关异常文案（2026-10 增量）', () => {
+  const makeExecClient = (status: number): WopClient => {
+    const client = makeMutClient({ serverRoot: 'https://gw.test' });
+    client.setTransport({
+      send: async () => ({ status, headers: {}, body: 'x' }),
+    });
+    return client;
+  };
+
+  it('serverRoot 未配置 execute → 消息全等 + configuration', async () => {
+    await expect(makeMutClient().execute('GET', '/p')).rejects.toMatchObject({
+      message: 'serverRoot 未配置，无法 execute',
+      category: 'configuration',
+    });
+  });
+
+  it('status 300 → WopGatewayResponseError 消息全等（含响应体字节数）', async () => {
+    await expect(makeExecClient(300).execute('GET', '/p')).rejects.toMatchObject({
+      name: 'WopGatewayResponseError',
+      message: 'WOP 网关返回 HTTP 300（响应体 1 字节）',
+      statusCode: 300,
+      body: 'x',
+    });
+  });
+
+  it('status 201 放行（2xx 上侧边界，不抛 WopGatewayResponseError）', async () => {
+    await expect(makeExecClient(201).execute('GET', '/p')).resolves.toBeDefined();
+  });
+
+  it('appKey 空白串 → 构造器同步抛消息全等 + category parse', () => {
+    expectThrow(
+      () => makeMutClient({ appKey: '   ' }),
+      'appKey 不能为空',
+      'parse',
+    );
+  });
+});
+
+describe('suite.ts：WOP-RSA2048-SHA256 十字段全等（2026-10 增量，RSA2048 表无全等断言）', () => {
+  it('WOP-RSA2048-SHA256 十字段全等', () => {
+    const s = parseSecurityReq('WOP-RSA2048-SHA256');
+    expect(s.securityReq).toBe('WOP-RSA2048-SHA256');
+    expect(s.keyAlgorithm).toBe('RSA');
+    expect(s.keyLength).toBe(2048);
+    expect(s.digestAlgorithm).toBe('SHA256');
+    expect(s.signAlgorithm).toBe('SHA256withRSA');
+    expect(s.messageAlgorithm).toBe('AES-256-GCM');
+    expect(s.keyWrapAlgorithm).toBe('RSA-2048-OAEP(SHA-256/MGF1-SHA-256)');
+    expect(s.digestLabel).toBe('sha-256');
+    expect(s.signatureB64uLength).toBe(342);
+    expect(s.expectedDekAlg).toBe('AES-256-GCM');
+  });
+
+  it('三段式合法但家族表拒：102 行守卫消息全等（2026-10 增量，仅跨族分支有断言）', () => {
+    expectThrow(
+      () => parseSecurityReq('WOP-RSA2-SHA256'),
+      '不支持的算法组合 "WOP-RSA2-SHA256"：密钥算法或摘要算法不在支持列表',
+      'unsupported',
+    );
+  });
+});
+
+describe('requestId 生成：v4 版本位与 variant 位恒定（附录 I/I3）', () => {
+  it('20 次生成：第 13 hex 恒为 4、第 17 hex 恒属 8/9/a/b', async () => {
+    const client = makeMutClient({ serverRoot: 'https://gw.test' });
+    for (let i = 0; i < 20; i++) {
+      const draft = await client.buildRequest('GET', '/p');
+      const id = draft.headers['x-wop-request-id']!;
+      expect(id).toMatch(/^[0-9a-f]{32}$/);
+      expect(id[12]).toBe('4');
+      expect('89ab').toContain(id[16]);
+    }
   });
 });
