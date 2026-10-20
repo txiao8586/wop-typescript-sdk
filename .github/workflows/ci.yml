@@ -27,6 +27,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - run: pnpm coverage
+      - run: pnpm test:bdd
+        if: matrix.node-version != '20'  # cucumber@13 engines 要求 Node ≥22
       - run: pnpm build
       - run: pnpm test:dist
 

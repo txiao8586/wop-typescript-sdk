@@ -28,6 +28,8 @@ const state: {
 
 const PATH = '/v1/order/create';
 const BODY = JSON.stringify({ orderId: 'bdd-20260829-001', amount: 188 });
+/** S11 重放确定性：requestId 缺省生成是每次独立的（附录 I），全等断言须显式透传固定值 */
+const S11_REQUEST_ID = 'req-bdd-s11-fixed-000000000000001';
 
 function freshClient(suite = 'WOP-RSA3072-SHA256'): WopClient {
   return new WopClient({
@@ -59,7 +61,7 @@ When('商户用 {string} 套件初始化客户端', function (suite: string) {
 
 When('商户对订单接口发起 L0 请求', async function () {
   state.client ??= freshClient();
-  state.draft = await state.client.buildRequest('POST', PATH, BODY, { timestamp: 1, nonce: 'n' });
+  state.draft = await state.client.buildRequest('POST', PATH, BODY, { timestamp: 1, nonce: 'n', requestId: S11_REQUEST_ID });
 });
 
 When('商户对查询接口发起无 body 的 GET 请求', async function () {
@@ -114,7 +116,7 @@ When('商户校验平台签名到另一路径的回调', async function () {
 // ---------- When（重放/传输，S11-S12）----------
 
 When('商户以同参数再构造一次 L0 请求', async function () {
-  state.draft2 = await state.client!.buildRequest('POST', PATH, BODY, { timestamp: 1, nonce: 'n' });
+  state.draft2 = await state.client!.buildRequest('POST', PATH, BODY, { timestamp: 1, nonce: 'n', requestId: S11_REQUEST_ID });
 });
 
 When('平台返回超过 11MiB 上限的无限响应体', async function () {
