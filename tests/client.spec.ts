@@ -520,3 +520,154 @@ describe('x-wop-request-id 透传头（wop-specs 附录 I）', () => {
     }
   });
 });
+
+describe('x-wop-sub-mch-id 子商户身份头（ISV D-13）', () => {
+  const FIXED = { timestamp: 1, nonce: 'n', requestId: 'req-fixed' } as const;
+
+  function signedNamesOf(headers: Record<string, string>): string[] {
+    return headers['x-wop-sign']!.split('/')[2]!.split(';');
+  }
+
+  it('未传 / 空串 / 纯空白 / 运行时 null：头缺席且全 draft 与基线逐字节相同（AC-20）', async () => {
+    const client = makeClient();
+    const baseline = await client.buildRequest('POST', '/p', BODY, { ...FIXED });
+    expect('x-wop-sub-mch-id' in baseline.headers).toBe(false);
+    expect(signedNamesOf(baseline.headers)).toEqual([
+      'x-wop-appkey',
+      'x-wop-content-digest',
+      'x-wop-nonce',
+      'x-wop-timestamp',
+    ]);
+
+    for (const absent of ['', '   ', null as unknown as string]) {
+      const draft = await client.buildRequest('POST', '/p', BODY, { ...FIXED, subMchId: absent });
+      expect('x-wop-sub-mch-id' in draft.headers).toBe(false);
+      expect(draft).toEqual(baseline);
+    }
+  });
+
+  it('L0 有 body：头写入且自动入 signedHeaders（排序位 nonce 后、timestamp 前）', async () => {
+    const client = makeClient();
+    const draft = await client.buildRequest('POST', '/p', BODY, { ...FIXED, subMchId: 'PLF-SUB-001' });
+    expect(draft.headers['x-wop-sub-mch-id']).toBe('PLF-SUB-001');
+    expect(signedNamesOf(draft.headers)).toEqual([
+      'x-wop-appkey',
+      'x-wop-content-digest',
+      'x-wop-nonce',
+      'x-wop-sub-mch-id',
+      'x-wop-timestamp',
+    ]);
+    expect(signedNamesOf(draft.headers)).not.toContain('x-wop-request-id');
+    expect(await verifyDraftCanonical(draft.headers, 'POST', '/p', '', fromBase64(MERCH_PUB))).toBe(true);
+  });
+
+  it('L0 无 body：无 digest，子商户头仍入签', async () => {
+    const client = makeClient();
+    const draft = await client.buildRequest('GET', '/p', undefined, { ...FIXED, subMchId: 'PLF-SUB-001' });
+    expect(draft.headers['x-wop-content-digest']).toBeUndefined();
+    expect(signedNamesOf(draft.headers)).toEqual([
+      'x-wop-appkey',
+      'x-wop-nonce',
+      'x-wop-sub-mch-id',
+      'x-wop-timestamp',
+    ]);
+  });
+
+  it('L2：digest/encrypt/子商户头同入签且 canonical 可验', async () => {
+    const client = makeClient();
+    const draft = await client.buildRequest('POST', '/p', BODY, {
+      ...FIXED,
+      level: 'L2',
+      dek: new Uint8Array(32).fill(7),
+      iv: new Uint8Array(12).fill(9),
+      subMchId: 'PLF-SUB-001',
+    });
+    expect(signedNamesOf(draft.headers)).toEqual([
+      'x-wop-appkey',
+      'x-wop-content-digest',
+      'x-wop-encrypt',
+      'x-wop-nonce',
+      'x-wop-sub-mch-id',
+      'x-wop-timestamp',
+    ]);
+    expect(await verifyDraftCanonical(draft.headers, 'POST', '/p', '', fromBase64(MERCH_PUB))).toBe(true);
+  });
+
+  it('首尾空白 trim 后上行', async () => {
+    const client = makeClient();
+    const draft = await client.buildRequest('GET', '/p', undefined, {
+      ...FIXED,
+      subMchId: '  PLF-SUB-001  ',
+    });
+    expect(draft.headers['x-wop-sub-mch-id']).toBe('PLF-SUB-001');
+  });
+
+  it('控制字符 / CRLF / 非 ASCII：trim 前原值扫描即拒（configuration）', async () => {
+    const client = makeClient();
+    for (const bad of ['a\nb', 'a\rb', 'a\0b', 'a\x7fb', 'a\tb', '\nlead', 'trail\r', ' \t ', '\0', '\x7f', 'PLF中文', 'é', '😀']) {
+      await expect(
+        client.buildRequest('GET', '/p', undefined, { ...FIXED, subMchId: bad }),
+      ).rejects.toMatchObject({ category: 'configuration' });
+      await expect(
+        client.buildRequest('GET', '/p', undefined, { ...FIXED, subMchId: bad }),
+      ).rejects.toThrow(/可打印 ASCII/);
+    }
+  });
+
+  it('边界：0x1F 拒、0x7E 可、内部空格拒；全空格视为缺席', async () => {
+    const client = makeClient();
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { ...FIXED, subMchId: '\x1f' }),
+    ).rejects.toMatchObject({ category: 'configuration' });
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { ...FIXED, subMchId: '~' }),
+    ).resolves.toMatchObject({ headers: { 'x-wop-sub-mch-id': '~' } });
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { ...FIXED, subMchId: 'PLF SUB' }),
+    ).rejects.toThrow(/subMchId 不能包含内部空白/);
+    const blank = await client.buildRequest('GET', '/p', undefined, { ...FIXED, subMchId: '   ' });
+    expect('x-wop-sub-mch-id' in blank.headers).toBe(false);
+  });
+
+  it('长度：trim 后 128 可、129 拒（先 trim 再计长）', async () => {
+    const client = makeClient();
+    const ok128 = await client.buildRequest('GET', '/p', undefined, {
+      ...FIXED,
+      subMchId: ` ${'a'.repeat(128)} `,
+    });
+    expect(ok128.headers['x-wop-sub-mch-id']).toBe('a'.repeat(128));
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { ...FIXED, subMchId: 'a'.repeat(129) }),
+    ).rejects.toThrow(/subMchId 长度不能超过 128（实际 129）/);
+  });
+
+  it('execute 路径：subMchId 经 options 透传上行并入签（fetch mock 捕获请求头）', async () => {
+    const client = new WopClient({
+      appKey: 'test-app-key',
+      suite: 'WOP-RSA3072-SHA256',
+      merchantPrivateKey: MERCH_PRIV,
+      platformPublicKey: PLAT_PUB,
+      serverRoot: 'https://gw.example.com/gateway',
+    });
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 200, headers: {} }));
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    try {
+      await client.execute('GET', '/p', undefined, { ...FIXED, subMchId: 'PLF-SUB-001' });
+      const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1]!;
+      const headers = init.headers as Record<string, string>;
+      expect(headers['x-wop-sub-mch-id']).toBe('PLF-SUB-001');
+      expect(signedNamesOf(headers)).toContain('x-wop-sub-mch-id');
+      expect(signedNamesOf(headers)).not.toContain('x-wop-request-id');
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it('幂等：同固定 options 两次构造全等', async () => {
+    const client = makeClient();
+    const a = await client.buildRequest('POST', '/p', BODY, { ...FIXED, subMchId: 'PLF-SUB-001' });
+    const b = await client.buildRequest('POST', '/p', BODY, { ...FIXED, subMchId: 'PLF-SUB-001' });
+    expect(a).toEqual(b);
+  });
+});

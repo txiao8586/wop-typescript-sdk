@@ -88,6 +88,7 @@ const OPTIONS: RequestOptions = {
   nonce: 'consumer-nonce',
   dek: new Uint8Array(32),
   iv: new Uint8Array(12),
+  subMchId: 'PLF-SUB-001',
 };
 
 const client = new WopClient(CONFIG);

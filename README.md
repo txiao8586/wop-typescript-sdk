@@ -90,6 +90,23 @@ import { AxiosTransport } from '@wanlianyida/wop-typescript-sdk/axios';
 client.setTransport(new AxiosTransport());
 ```
 
+## ISV 子商户身份（可选，D-13）
+
+代子商户调用业务 API 时，按请求传 `subMchId`（值 = 子商户 `plf_co_id`）：
+
+```ts
+const draft = await client.buildRequest('POST', '/v1/order/create', body, {
+  subMchId: 'PLF-SUB-001',
+});
+```
+
+SDK 自动写入 `x-wop-sub-mch-id` 并纳入 `x-wop-sign` 的 signedHeaders。值先做首尾空白 trim；
+仅接受可打印 ASCII（0x20–0x7E）、不得含内部空格、trim 后长度 ≤128，违规在构造期抛
+`configuration`。不传 = 应用自身身份：头缺席，行为与旧版逐字节一致（AC-20）。
+
+该头仅在网关子商户灰度放行且应用为 ISV 应用（`app_type=20`）时生效。使用 CORS 精确
+allowlist 的浏览器侧部署须在 `Access-Control-Allow-Headers` 中追加 `x-wop-sub-mch-id`。
+
 ## 破坏性变更
 
 - **path 含 `?` 从「拆分入 canonical」改为构造期拒绝**：`buildRequest` / `send` / `execute` 对含 `?` 或 `#` 的 path 直接抛错（configuration 类）。网关 canonical 本就不支持 query 参数，fail-fast 早于签名与发送；带筛选条件的接口请改用 body 表达。

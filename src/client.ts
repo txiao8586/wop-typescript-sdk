@@ -69,6 +69,13 @@ export interface RequestOptions {
    * 控制字符（trim 前原值扫描，CR/LF/NUL/DEL）与超长（trim 后 UTF-8 字节 \> 128）均拒。
    */
   requestId?: string;
+  /**
+   * 子商户身份（ISV D-13）：出向写入 `x-wop-sub-mch-id` 并自动纳入 signedHeaders，
+   * 值 = 子商户 `plf_co_id`。null/undefined/空白 → 头缺席（应用自身身份，AC-20 零回归）。
+   * 构造即校验：trim 前原值仅可打印 ASCII 0x20..0x7E（拒 CR/LF/NUL/控制字符与非 ASCII，
+   * 防头注入/签名歧义）；trim 后不得含内部空格；trim 后长度 ≤ 128；违规抛 configuration。
+   */
+  subMchId?: string;
 }
 
 /** buildRequest 产物:可直接交任意 HTTP 栈发送的(method, path, headers, wireBody) */
@@ -107,6 +114,9 @@ const ENCRYPT_HEADER_PREFIX = 'l2';
 
 /** 附录 I 透传头名（恒不入签；签名计算完成后写入） */
 const REQUEST_ID_HEADER = 'x-wop-request-id';
+
+/** ISV D-13 子商户身份头（值 = 子商户 plf_co_id）；存在即入签，缺席 = 应用自身身份（AC-20） */
+const SUB_MCH_ID_HEADER = 'x-wop-sub-mch-id';
 
 /** 附录 I/I2 trim 集 = 附录 G2 TrimAll 空白类（空格、\t、\n、\x0B、\f、\r）。
  * 逐字符扫描去两端（CodeQL：正则量词在超长重复串上有回溯放大面，线性扫描等价且无此面）；
@@ -157,6 +167,33 @@ function resolveRequestId(raw: string | undefined): string | null {  if (raw ===
   const utf8Len = utf8Encode(trimmed).length;
   if (utf8Len > 128) {
     throw new WopError(`requestId UTF-8 字节长度不能超过 128（实际 ${utf8Len}）`, 'configuration');
+  }
+  return trimmed;
+}
+
+/**
+ * ISV D-13 subMchId 校验（构造即拒，configuration 类）：
+ * 1. trim 前按原值逐码点扫描：仅可打印 ASCII 0x20..0x7E（拒控制字符/CR/LF/NUL/非 ASCII，
+ *    防头注入/签名歧义）；
+ * 2. trim 后为空 → 视为未设置（头缺席 = 应用自身身份）；
+ * 3. trim 后含内部 ASCII 空格 → 拒（网关 canonical trimall 折叠与身份查询不一致）；
+ * 4. trim 后长度 > 128 → 拒（先验 ASCII，字符数 = 字节数）。返回 trim 后上行值；null = 未设置。
+ */
+function resolveSubMchId(raw: string | undefined): string | null {
+  if (raw === undefined || raw === null) return null;
+  for (const ch of raw) {
+    const cp = ch.codePointAt(0)!;
+    if (cp < 0x20 || cp > 0x7e) {
+      throw new WopError(`subMchId 须为可打印 ASCII（防头注入/签名歧义）: ${cp}`, 'configuration');
+    }
+  }
+  const trimmed = trimAll(raw);
+  if (trimmed === '') return null;
+  if (trimmed.includes(' ')) {
+    throw new WopError('subMchId 不能包含内部空白', 'configuration');
+  }
+  if (trimmed.length > 128) {
+    throw new WopError(`subMchId 长度不能超过 128（实际 ${trimmed.length}）`, 'configuration');
   }
   return trimmed;
 }
@@ -288,6 +325,8 @@ export class WopClient {
     validateApiPath(path);
     // 附录 I/I2：requestId 构造即校验（fail-fast，不延迟到发送前）
     const resolvedRequestId = resolveRequestId(options.requestId);
+    // ISV D-13：subMchId 构造即校验（fail-fast，不延迟到发送前）
+    const resolvedSubMchId = resolveSubMchId(options.subMchId);
     if (level === 'L2' && !hasBody) {
       throw new WopError('L2 加密需要非空 body', 'parse');
     }
@@ -300,6 +339,10 @@ export class WopClient {
       'x-wop-nonce': nonce,
       'x-wop-timestamp': String(options.timestamp ?? Date.now()),
     };
+    // ISV D-13：签名前写入 → signedHeaders（Object.keys 排序）自动包含；缺席 = 应用自身身份
+    if (resolvedSubMchId !== null) {
+      headers[SUB_MCH_ID_HEADER] = resolvedSubMchId;
+    }
     if (level === 'L2') {
       const dek = options.dek ?? (await randomBytes(32));
       const iv = options.iv ?? (await randomBytes(12));

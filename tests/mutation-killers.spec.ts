@@ -775,3 +775,72 @@ describe('requestId 生成：v4 版本位与 variant 位恒定（附录 I/I3）'
     }
   });
 });
+
+describe('subMchId：ISV D-13 校验文案与边界（2026-10 增量）', () => {
+  it('控制字符/非 ASCII：消息码点全等 + configuration', async () => {
+    const client = makeMutClient();
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { subMchId: '\n' }),
+    ).rejects.toMatchObject({
+      message: 'subMchId 须为可打印 ASCII（防头注入/签名歧义）: 10',
+      category: 'configuration',
+    });
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { subMchId: '中' }),
+    ).rejects.toMatchObject({
+      message: 'subMchId 须为可打印 ASCII（防头注入/签名歧义）: 20013',
+      category: 'configuration',
+    });
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { subMchId: '\x1f' }),
+    ).rejects.toMatchObject({
+      message: 'subMchId 须为可打印 ASCII（防头注入/签名歧义）: 31',
+      category: 'configuration',
+    });
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { subMchId: '\x7f' }),
+    ).rejects.toMatchObject({
+      message: 'subMchId 须为可打印 ASCII（防头注入/签名歧义）: 127',
+      category: 'configuration',
+    });
+  });
+
+  it('内部空格/超长：消息全等 + configuration', async () => {
+    const client = makeMutClient();
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { subMchId: 'PLF SUB' }),
+    ).rejects.toMatchObject({
+      message: 'subMchId 不能包含内部空白',
+      category: 'configuration',
+    });
+    await expect(
+      client.buildRequest('GET', '/p', undefined, { subMchId: 'a'.repeat(129) }),
+    ).rejects.toMatchObject({
+      message: 'subMchId 长度不能超过 128（实际 129）',
+      category: 'configuration',
+    });
+  });
+
+  it('合法边界：0x7E 与 trim 后 128 接受且写头', async () => {
+    const client = makeMutClient();
+    const tilde = await client.buildRequest('GET', '/p', undefined, { subMchId: '~' });
+    expect(tilde.headers['x-wop-sub-mch-id']).toBe('~');
+    const len128 = await client.buildRequest('GET', '/p', undefined, {
+      subMchId: ` ${'a'.repeat(128)} `,
+    });
+    expect(len128.headers['x-wop-sub-mch-id']).toBe('a'.repeat(128));
+  });
+
+  it('缺席/空白不写头且不入签（杀 if 条件与常量变异）', async () => {
+    const client = makeMutClient();
+    for (const options of [
+      { timestamp: 1, nonce: 'n' },
+      { timestamp: 1, nonce: 'n', subMchId: '' },
+      { timestamp: 1, nonce: 'n', subMchId: '   ' },
+    ]) {
+      const draft = await client.buildRequest('GET', '/p', undefined, options);
+      expect(draft.headers['x-wop-sub-mch-id']).toBeUndefined();
+      expect(draft.headers['x-wop-sign']!.split('/')[2]!.split(';')).not.toContain('x-wop-sub-mch-id');
+    }
+  });
+});

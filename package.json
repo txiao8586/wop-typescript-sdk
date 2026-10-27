@@ -1,6 +1,6 @@
 {
   "name": "@wanlianyida/wop-typescript-sdk",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "WOP 商户侧官方 TypeScript SDK：协议核心（签名/摘要/L2 数字信封/验签解密）+ 可插拔 HTTP 适配层",
   "type": "module",
   "license": "MIT",

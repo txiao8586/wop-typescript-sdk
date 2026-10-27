@@ -88,6 +88,26 @@ import { AxiosTransport } from '@wanlianyida/wop-typescript-sdk/axios';
 client.setTransport(new AxiosTransport());
 ```
 
+## ISV sub-merchant identity (optional, D-13)
+
+When calling business APIs on behalf of a sub-merchant, pass `subMchId` per request
+(value = the sub-merchant's `plf_co_id`):
+
+```ts
+const draft = await client.buildRequest('POST', '/v1/order/create', body, {
+  subMchId: 'PLF-SUB-001',
+});
+```
+
+The SDK writes `x-wop-sub-mch-id` and includes it in the `x-wop-sign` signedHeaders. Leading/trailing
+whitespace is trimmed; printable ASCII only (0x20–0x7E), no internal whitespace, trimmed length ≤128;
+violations throw `configuration` at build time. Omitting it keeps the app's own identity: the header is
+absent and behavior is byte-identical to earlier versions (AC-20).
+
+The header takes effect only when the gateway sub-merchant gray gate is open for the app and the app is
+an ISV app (`app_type=20`). Browser deployments with an exact CORS allowlist must add
+`x-wop-sub-mch-id` to `Access-Control-Allow-Headers`.
+
 ## Vector self-test (conformance)
 
 `tests/fixtures/crypto-vectors.json` in this repo is a full read-only copy of the protocol golden vectors.
