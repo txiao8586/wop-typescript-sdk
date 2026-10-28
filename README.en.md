@@ -100,12 +100,13 @@ const draft = await client.buildRequest('POST', '/v1/order/create', body, {
 ```
 
 The SDK writes `x-wop-sub-mch-id` and includes it in the `x-wop-sign` signedHeaders. Leading/trailing
-whitespace is trimmed; printable ASCII only (0x20–0x7E), no internal whitespace, trimmed length ≤128;
+only leading/trailing ASCII spaces are trimmed (control characters such as tab/newline are rejected at build time, even at the edges); printable ASCII only (0x20–0x7E), no internal whitespace, trimmed length ≤128;
 violations throw `configuration` at build time. Omitting it keeps the app's own identity: the header is
 absent and behavior is byte-identical to earlier versions (AC-20).
 
-The header takes effect only when the gateway sub-merchant gray gate is open for the app and the app is
-an ISV app (`app_type=20`). Browser deployments with an exact CORS allowlist must add
+**Gateway prerequisite**: the gateway must run the ISV D-13 build with the gray gate open for the app
+(and the app must be an ISV app, `app_type=20`); until then the header is ignored and the request runs
+under the app's own identity — do not enable it early. Browser deployments with an exact CORS allowlist must add
 `x-wop-sub-mch-id` to `Access-Control-Allow-Headers`.
 
 ## Vector self-test (conformance)

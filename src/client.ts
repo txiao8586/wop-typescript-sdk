@@ -71,7 +71,8 @@ export interface RequestOptions {
   requestId?: string;
   /**
    * 子商户身份（ISV D-13）：出向写入 `x-wop-sub-mch-id` 并自动纳入 signedHeaders，
-   * 值 = 子商户 `plf_co_id`。null/undefined/空白 → 头缺席（应用自身身份，AC-20 零回归）。
+   * 值 = 子商户 `plf_co_id`。null/undefined/全空格（仅 0x20）→ 头缺席（应用自身身份，
+   * AC-20 零回归）；控制字符（含 \t 与换行）即便只在首尾也拒绝，不会被 trim 掉。
    * 构造即校验：trim 前原值仅可打印 ASCII 0x20..0x7E（拒 CR/LF/NUL/控制字符与非 ASCII，
    * 防头注入/签名歧义）；trim 后不得含内部空格；trim 后长度 ≤ 128；违规抛 configuration。
    */
