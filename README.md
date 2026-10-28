@@ -90,6 +90,25 @@ import { AxiosTransport } from '@wanlianyida/wop-typescript-sdk/axios';
 client.setTransport(new AxiosTransport());
 ```
 
+## ISV 子商户身份（可选，D-13）
+
+代子商户调用业务 API 时，按请求传 `subMchId`（值 = 子商户 `plf_co_id`）：
+
+```ts
+const draft = await client.buildRequest('POST', '/v1/order/create', body, {
+  subMchId: 'PLF-SUB-001',
+});
+```
+
+SDK 自动写入 `x-wop-sub-mch-id` 并纳入 `x-wop-sign` 的 signedHeaders。仅首尾 **ASCII 空格**
+会被 trim；控制字符（含 `\t`、换行）即便出现在首尾也在构造期拒绝，不会被 trim 掉。
+值须为可打印 ASCII（0x20–0x7E）、不得含内部空格、trim 后长度 ≤128，违规抛 `configuration`。
+不传 = 应用自身身份：头缺席，行为与旧版逐字节一致（AC-20）。
+
+**网关前置**：需网关已部署 ISV D-13 版本且该应用灰度放行，才会按子商户身份鉴权；
+在此之前携带该头会被网关忽略（按应用自身身份执行），请勿在网关就绪前启用。使用 CORS 精确
+allowlist 的浏览器侧部署须在 `Access-Control-Allow-Headers` 中追加 `x-wop-sub-mch-id`。
+
 ## 破坏性变更
 
 - **path 含 `?` 从「拆分入 canonical」改为构造期拒绝**：`buildRequest` / `send` / `execute` 对含 `?` 或 `#` 的 path 直接抛错（configuration 类）。网关 canonical 本就不支持 query 参数，fail-fast 早于签名与发送；带筛选条件的接口请改用 body 表达。

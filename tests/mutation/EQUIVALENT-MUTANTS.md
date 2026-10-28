@@ -9,10 +9,10 @@
 
 | # | 位置 | 算子 | 锚 | 等价原因 |
 |---|------|------|----|---------|
-| 1 | client.ts:533 | cond-lt `dekIdx < 0` → `<= 0` | `if (dekIdx < 0)` | `dekIdx === 0` 不可达：进入该分支要求头以 `l2` 开头（`startsWith`），而 `indexOf('dek=') === 0` 要求头以 `dek=` 开头，二者互斥 | |
-| 2 | `client.ts:502` | bool `sigOk = true` → `false` | `authString: `${protocolV` | 初值唯一读取点在 `rsaVerify` 返回后立即覆盖；rsaVerify 抛错路径经 catch 显式赋 `false`，两初值在所有路径终值一致 | |
-| 3 | client.ts:435 | string `'parse'` category 追加 | `throw new WopError('响应缺少 x-wop-sign 头'` | `verifyResponse` 捕获 WopError 后仅外显 `e.message`；内部 category 无任何可观测通道（对外契约是 VerifyResult{ok,reason}） | |
-| 4 | `client.ts:548` | string `'consistency'` category 追加 | `// 一律归入解密类模糊（I7 保守默认，int` | 同上 | |
+| 1 | client.ts:577 | cond-lt `dekIdx < 0` → `<= 0` | `if (dekIdx < 0)` | `dekIdx === 0` 不可达：进入该分支要求头以 `l2` 开头（`startsWith`），而 `indexOf('dek=') === 0` 要求头以 `dek=` 开头，二者互斥 | |
+| 2 | `client.ts:546` | bool `sigOk = true` → `false` | `authString: `${protocolV` | 初值唯一读取点在 `rsaVerify` 返回后立即覆盖；rsaVerify 抛错路径经 catch 显式赋 `false`，两初值在所有路径终值一致 | |
+| 3 | client.ts:479 | string `'parse'` category 追加 | `throw new WopError('响应缺少 x-wop-sign 头'` | `verifyResponse` 捕获 WopError 后仅外显 `e.message`；内部 category 无任何可观测通道（对外契约是 VerifyResult{ok,reason}） | |
+| 4 | `client.ts:592` | string `'consistency'` category 追加 | `// 一律归入解密类模糊（I7 保守默认，int` | 同上 | |
 | 5 | crypto.ts:146 | cond-lt `len < 16` → `<= 16` | `if (cipherTag.length < 1` | 16B 输入：短路路径抛 `DECRYPT_FAILED`；非短路走 WebCrypto GCM（空明文+16B tag）tag 校验失败同抛 `DECRYPT_FAILED`（I7 模糊化使两路径文案恒同）——**2026-10-19 已击杀**：空明文 GCM 往返（mutation-killers）证明 16B 合法 tag 原版解密成功、变异被拒 | |
 | 6 | crypto.ts:146 | numeric `16` → `17` | `if (cipherTag.length < 1` | 15/16B 输入两路径同文案（同上）；17B+ 输入不受阈值影响——**2026-10-19 已击杀**（同上空明文往返） | |
 | 7 | crypto.ts:146 | stmt-del 删除短路 if | `if (cipherTag.length < 1` | 15B 输入走 WebCrypto 失败 → 同文案（同上） | |
@@ -75,12 +75,12 @@
 
 | # | 位置 | 算子 | 锚 | 等价原因 |
 |---|------|------|----|---------|
-| 22 | client.ts:498 | string | `'parse',` | #3 移位：'parse' category 追加——verifyResponse 捕获后仅外显 message，category 无可观测通道（对外契约 VerifyResult{ok,reason}） |
-| 23 | client.ts:534 | string | `throw new WopError('x-wop-encrypt 格式错误：L2 须携带 dek='` | #4 移位：本行被变异字面量是 'parse' category（消息字面量已被 :358 全等钉死）——catch 后仅外显 message，category 无可观测通道 |
-| 24 | client.ts:508 | bool | `let sigOk = true;` | #2 移位：sigOk 初值唯一读取点立即覆盖 |
-| 25 | client.ts:533 | cond-lt | `if (dekIdx < 0)` | #1 移位：dekIdx===0 不可达（l2 前缀与 dek=0 互斥） |
-| 26 | client.ts:136 | numeric | `b[6] = (b[6]! & 0x0f)` | #8 同构：Node ≥19 `randomUUID` 快路径使该分支仅 stub 后可达；0x40→65 只翻转 bit0，version 高 nibble 恒 4 不变，确定区分需对 id[13] 做奇偶统计断言（概率性，不引入） |
-| 27 | client.ts:137 | numeric | `b[8] = (b[8]! & 0x3f)` | 同上（0x80→129 只翻转 bit0，variant 高位不变） |
+| 22 | client.ts:499 | string | `'parse',` | #3 移位：'parse' category 追加——verifyResponse 捕获后仅外显 message，category 无可观测通道（对外契约 VerifyResult{ok,reason}） |
+| 23 | client.ts:578 | string | `throw new WopError('x-wop-encrypt 格式错误：L2 须携带 dek='` | #4 移位：本行被变异字面量是 'parse' category（消息字面量已被 :358 全等钉死）——catch 后仅外显 message，category 无可观测通道 |
+| 24 | client.ts:552 | bool | `let sigOk = true;` | #2 移位：sigOk 初值唯一读取点立即覆盖 |
+| 25 | client.ts:577 | cond-lt | `if (dekIdx < 0)` | #1 移位：dekIdx===0 不可达（l2 前缀与 dek=0 互斥） |
+| 26 | client.ts:147 | numeric | `b[6] = (b[6]! & 0x0f)` | #8 同构：Node ≥19 `randomUUID` 快路径使该分支仅 stub 后可达；0x40→65 只翻转 bit0，version 高 nibble 恒 4 不变，确定区分需对 id[13] 做奇偶统计断言（概率性，不引入） |
+| 27 | client.ts:148 | numeric | `b[8] = (b[8]! & 0x3f)` | 同上（0x80→129 只翻转 bit0，variant 高位不变） |
 | 28 | crypto.ts:28 | stmt-del | `if (g?.subtle) return g;` | #8 移位：Node≥19 globalThis.crypto 与 webcrypto 同对象 |
 | 31 | crypto.ts:146 | stmt-del | `if (cipherTag.length < 16)` | #7 移位：15B 输入走 WebCrypto 失败同文案；16B 空 tag 往返两版均走 WebCrypto 同结果（2026-10-19 复核成立） |
 | 32 | encode.ts:70 | cond-gt | `if (end > 0 && s[end` | #9 移位：空串 s[-1]=undefined ≠ '\n'，换行探测无操作差异 |
@@ -101,8 +101,8 @@
 
 | # | 位置 | 算子 | 锚 | 等价原因 |
 |---|------|------|----|---------|
-| 43 | client.ts:120 | cond-lt | `while (start < end && isWs(s.charCodeAt(start)))` | trim 双指针：end===start 时 s[-1]=undefined，charCodeAt→NaN，isWs(NaN) false 立即退环（08-31 #9 同构） |
-| 44 | client.ts:121 | cond-gt | `while (end > start && isWs(s.charCodeAt(end - 1)))` | 同上对称端 |
+| 43 | client.ts:131 | cond-lt | `while (start < end && isWs(s.charCodeAt(start)))` | trim 双指针：end===start 时 s[-1]=undefined，charCodeAt→NaN，isWs(NaN) false 立即退环（08-31 #9 同构） |
+| 44 | client.ts:132 | cond-gt | `while (end > start && isWs(s.charCodeAt(end - 1)))` | 同上对称端 |
 | 45 | loader.ts:113 | neq | `if (typeof __dirname !== 'undefined')` | 反转仅在纯 ESM 运行时可观测；vitest 运行时 __dirname 由 vite CJS 兼容层注入且与 import.meta 指向同目录，两分支返回值相同 |
 | 46 | loader.ts:113 | string | `if (typeof __dirname !== 'undefined')` | 'undefined'@mut 使条件恒真 → 恒走 __dirname 分支 → vitest 下与原版同返回值 |
 | 48 | configValidator.ts:36 | stmt-del | `void suite;` | `void suite;` 为纯标记语句（表明已校验），无任何可观测副作用 |

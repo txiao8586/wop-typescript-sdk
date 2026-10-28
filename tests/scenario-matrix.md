@@ -26,6 +26,7 @@
 | S16 | 平台公钥材料损坏但恰好通过长度校验（运行时才暴露） | F6 / I7 | rsaVerify 异常被吞为模糊「签名验证失败」，不泄露内部细节 | **新增 hardening.spec（行覆盖缺口 326-327）** |
 | S17 | L2 响应信封畸形：缺 dek=、encrypted 带 `=`、body 非 JSON、缺 encrypted 字段、载荷无 `$` | F5/F6/F7 / n06/n13 | 结构类明确 parse 拒绝；密钥参与类模糊 | 已有 edge.spec / client.spec |
 | S18 | SM 段向量在场但不消费 | §1.2 / Q7 | SM 套件必须拒（负测试锚：SM4 16B key 走 AES 入口必炸） | 已有 vectors.spec |
+| S19 | ISV 代子商户调用业务 API（D-13） | ISV D-13 / AC-20 | `subMchId` 写入 `x-wop-sub-mch-id` 且自动入 signedHeaders；不传 = 头缺席、签名逐字节不变 | 已有 client.spec 子商户头 describe；mutation-killers 文案/边界 |
 
 ## 二、攻击者视角补充（负路径）
 
@@ -37,6 +38,7 @@
 | A4 | base64url 尾随位非规范 / 带 `=` | 严格拒绝（D1，对齐 Go RawURLEncoding.Strict()） | encode.spec formatRules 全量 |
 | A5 | 响应头大小写混淆 | 小写化归一后校验 | client.spec 大小写不敏感 |
 | A6 | 声明了不存在的 signedHeader | 明确 parse 拒绝 | client.spec |
+| A7 | 子商户头注入/歧义：CR/LF/控制字符、非 ASCII、内部空格、超长 | configuration 明确拒绝（原值扫描先于 trim） | client.spec 子商户头 describe；mutation-killers 文案/边界 |
 
 ## 三、Gherkin 场景（cucumber-js，tests/features/merchant-journey.feature）
 

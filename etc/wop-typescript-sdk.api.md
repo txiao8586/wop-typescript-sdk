@@ -168,6 +168,7 @@ export interface RequestOptions {
     level?: 'L0' | 'L2';
     nonce?: string;
     requestId?: string;
+    subMchId?: string;
     timestamp?: number;
 }
 
