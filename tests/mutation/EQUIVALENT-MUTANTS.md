@@ -75,7 +75,7 @@
 
 | # | 位置 | 算子 | 锚 | 等价原因 |
 |---|------|------|----|---------|
-| 22 | client.ts:499 | string | `'parse',` | #3 移位：'parse' category 追加——verifyResponse 捕获后仅外显 message，category 无可观测通道（对外契约 VerifyResult{ok,reason}） |
+| 22 | client.ts:542 | string | `'parse',` | #3 移位：'parse' category 追加——verifyResponse 捕获后仅外显 message，category 无可观测通道（对外契约 VerifyResult{ok,reason}） |
 | 23 | client.ts:578 | string | `throw new WopError('x-wop-encrypt 格式错误：L2 须携带 dek='` | #4 移位：本行被变异字面量是 'parse' category（消息字面量已被 :358 全等钉死）——catch 后仅外显 message，category 无可观测通道 |
 | 24 | client.ts:552 | bool | `let sigOk = true;` | #2 移位：sigOk 初值唯一读取点立即覆盖 |
 | 25 | client.ts:577 | cond-lt | `if (dekIdx < 0)` | #1 移位：dekIdx===0 不可达（l2 前缀与 dek=0 互斥） |
